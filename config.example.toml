@@ -1,0 +1,68 @@
+# ================================
+#  APP SETTINGS
+# ================================
+[app]
+title = "FastAPI Application"
+host = "0.0.0.0"
+port = 8000
+workers = 1
+reload = false
+debug = false
+tz_offset_hours = 3.0
+default_offset = 0
+default_limit = 20
+maximum_limit = 100
+allow_origins = ["*"]
+
+
+# ================================
+#  DATABASE SETTINGS
+# ================================
+[database]
+postgres_username = "postgres"
+postgres_password = "postgres"
+postgres_db = "application"
+postgres_host = "db"
+postgres_port = 5432
+
+echo = true
+pool_pre_ping = true
+pool_recycle = 1800
+pool_use_lifo = true
+pool_timeout = 30
+pool_size = 5
+max_overflow = 10
+
+
+# ================================
+#  S3 SETTINGS
+# ================================
+[s3]
+aws_host = "http://minio:9000"
+aws_host_internal = "http://minio:9000"
+aws_host_external = "http://minio.example.com"
+
+aws_access_key = "<minio-access-key>"
+aws_secret_access_key = "<minio-secret-key>"
+aws_region = "us-east-1"
+aws_bucket = "app-bucket"
+
+
+# ================================
+#  LOGGING SETTINGS
+# ================================
+[logging]
+level = "INFO"
+
+
+# ================================
+#  REDIS SETTINGS
+# ================================
+[redis]
+redis_host = "redis"
+redis_port = 6379
+redis_db = 0
+redis_password = ""
+redis_max_connections = 10
+redis_socket_timeout = 5
+redis_socket_connect_timeout = 5

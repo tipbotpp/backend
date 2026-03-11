@@ -1,0 +1,82 @@
+name: Pull and Deploy to Main
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  run_pull:
+    name: Run Pull
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify Start
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            🚀 **Запуск деплоя на main-окружение**
+            Репозиторий: `${{ github.repository }}`
+            Ветка: `${{ github.ref }}`
+            Автор: `${{ github.actor }}`
+            Коммит: `${{ github.event.head_commit.message }}`
+            🔗 [Открыть коммит](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+
+      - name: Install SSH keys
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.MAIN_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ secrets.MAIN_SSH_PORT }} -H ${{ secrets.MAIN_SSH_HOST }} > ~/.ssh/known_hosts
+
+      - name: Connect and Pull
+        run: |
+          ssh -A -p ${{ secrets.MAIN_SSH_PORT }} ${{ secrets.MAIN_SSH_USER }}@${{ secrets.MAIN_SSH_HOST }} << 'EOF'
+          eval $(ssh-agent -s)
+          ssh-add ~/.ssh/id_ed25519
+          cd ${{ secrets.MAIN_WORK_DIR }}
+          git checkout ${{ secrets.MAIN_BRANCH }}
+          export POSTGRES_USER="${{ secrets.MAIN_POSTGRES_USERNAME }}"
+          export POSTGRES_PASSWORD="${{ secrets.MAIN_POSTGRES_PASSWORD }}"
+          export POSTGRES_DB="${{ secrets.MAIN_POSTGRES_DB }}"
+          export MINIO_ROOT_USER="${{ secrets.MAIN_MINIO_ROOT_USER }}"
+          export MINIO_ROOT_PASSWORD="${{ secrets.MAIN_MINIO_ROOT_PASSWORD }}"
+          export DOCKER_BUILDKIT=1
+          docker compose down
+          git pull --rebase
+          
+          rm -f config.toml
+          touch config.toml
+          echo '' >> config.toml
+          
+          docker compose up --build -d
+          EOF
+
+      - name: Notify Success
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            ✅ **Деплой на main-окружение завершён успешно**
+            🔗 [Workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Notify Failure
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            ❌ **Ошибка при деплое на main-окружение**
+            Репозиторий: `${{ github.repository }}`
+            Ветка: `${{ github.ref }}`
+            🔗 [Workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+      - name: Cleanup
+        run: rm -rf ~/.ssh

@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-migrations
+        name: Ruff (migrations)
+        entry: ruff check --fix
+        language: system
+        files: ^migrations/versions/.*\.py$

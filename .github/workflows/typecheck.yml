@@ -1,0 +1,80 @@
+name: Type Check
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify Start
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            🔎 **Запуск проверки типов (ty)**
+            Репозиторий: `${{ github.repository }}`
+            Ветка: `${{ github.ref }}`
+            Автор: `${{ github.actor }}`
+            🔗 [Открыть workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        shell: bash
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          uv --version
+
+      - name: Install ty
+        run: uv pip install --system ty
+
+      - name: Run ty
+        run: ty check src
+
+      - name: Notify Success
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            ✅ **Проверка типов (ty) прошла успешно**
+            Репозиторий: `${{ github.repository }}`
+            Ветка: `${{ github.ref }}`
+            🔗 [Workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Notify Failure
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            ❌ **Проверка типов (ty) упала**
+            Репозиторий: `${{ github.repository }}`
+            Ветка: `${{ github.ref }}`
+            Автор: `${{ github.actor }}`
+            🔗 [Workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
