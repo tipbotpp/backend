@@ -1,6 +1,6 @@
-from redis.asyncio import Redis, ConnectionPool
+from redis.asyncio import ConnectionPool, Redis
 
-from src.core.config import cfg
+from src.core.configs import cfg
 
 
 def create_redis_pool() -> ConnectionPool:
@@ -9,13 +9,13 @@ def create_redis_pool() -> ConnectionPool:
 	Аналог create_engine для SQLAlchemy.
 	"""
 	return ConnectionPool(
-		host=cfg.redis.redis_host,
-		port=cfg.redis.redis_port,
-		db=cfg.redis.redis_db,
-		password=cfg.redis.redis_password if cfg.redis.redis_password else None,
-		max_connections=cfg.redis.redis_max_connections,
-		socket_timeout=cfg.redis.redis_socket_timeout,
-		socket_connect_timeout=cfg.redis.redis_socket_connect_timeout,
+		host=cfg.redis.host,
+		port=cfg.redis.port,
+		db=cfg.redis.db,
+		password=cfg.redis.password if cfg.redis.password else None,
+		max_connections=cfg.redis.max_connections,
+		socket_timeout=cfg.redis.socket_timeout,
+		socket_connect_timeout=cfg.redis.socket_connect_timeout,
 		decode_responses=True,
 	)
 
