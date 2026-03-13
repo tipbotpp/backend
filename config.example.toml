@@ -16,14 +16,23 @@ allow_origins = ["*"]
 
 
 # ================================
+#  BOT SETTINGS
+# ================================
+[bot]
+token = "<telegram-bot-token>"
+debug = false
+drop_pending_updates = true
+
+
+# ================================
 #  DATABASE SETTINGS
 # ================================
 [database]
-postgres_username = "postgres"
-postgres_password = "postgres"
-postgres_db = "application"
-postgres_host = "db"
-postgres_port = 5432
+username = "postgres"
+password = "postgres"
+db = "application"
+host = "db"
+port = 5432
 
 echo = true
 pool_pre_ping = true
@@ -49,20 +58,20 @@ aws_bucket = "app-bucket"
 
 
 # ================================
+#  REDIS SETTINGS
+# ================================
+[redis]
+host = "redis"
+port = 6379
+db = 0
+password = ""
+max_connections = 10
+socket_timeout = 5
+socket_connect_timeout = 5
+
+
+# ================================
 #  LOGGING SETTINGS
 # ================================
 [logging]
 level = "INFO"
-
-
-# ================================
-#  REDIS SETTINGS
-# ================================
-[redis]
-redis_host = "redis"
-redis_port = 6379
-redis_db = 0
-redis_password = ""
-redis_max_connections = 10
-redis_socket_timeout = 5
-redis_socket_connect_timeout = 5
