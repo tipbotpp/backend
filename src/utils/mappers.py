@@ -22,7 +22,7 @@ def map_value(value: Any, target_type: type[Any]) -> Any:
     - примитивы (int, str, bool, и т.п.) — возвращаются как есть
     """
     if value is None:
-        return Noneц
+        return None
 
     # Any — ничего не делаем
     if target_type is Any:

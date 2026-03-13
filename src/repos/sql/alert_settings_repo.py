@@ -4,7 +4,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.alert_settings import AlertSettings
-from src.schemas.dataclasses.settings import AlertSettingsCreateDTO, AlertSettingsDTO
+from src.schemas.dataclasses.settings import (
+	AlertSettingsCreateDTO,
+	AlertSettingsDTO,
+)
 from src.utils.mappers import map_model
 
 

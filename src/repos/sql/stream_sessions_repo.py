@@ -4,7 +4,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.stream_sessions import StreamSessions
-from src.schemas.dataclasses.streams import StreamSessionCreateDTO, StreamSessionDTO
+from src.schemas.dataclasses.streams import (
+	StreamSessionCreateDTO,
+	StreamSessionDTO,
+)
 from src.utils.mappers import map_model
 
 

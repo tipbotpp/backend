@@ -4,7 +4,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.passive_income_settings import PassiveIncomeSettings
-from src.schemas.dataclasses.settings import PassiveIncomeSettingsCreateDTO, PassiveIncomeSettingsDTO
+from src.schemas.dataclasses.settings import (
+	PassiveIncomeSettingsCreateDTO,
+	PassiveIncomeSettingsDTO,
+)
 from src.utils.mappers import map_model
 
 
