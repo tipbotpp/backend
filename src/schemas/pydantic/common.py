@@ -1,6 +1,9 @@
 from typing import Any, Generic, Self, TypeVar
 
+from fastapi import Query
 from pydantic import BaseModel
+
+from src.core.configs import cfg
 
 T = TypeVar("T")
 
@@ -38,6 +41,6 @@ class Paginated(BaseModel, Generic[T]):  # noqa: UP046
 	offset: int
 
 
-# class PaginationRequest(BaseSchema):
-# 	limit: int = Query(cfg.app.default_limit, ge=1, le=100, description="Количество элементов")
-# 	offset: int = Query(cfg.app.default_offset, ge=0, description="Смещение")
+class PaginationFilters(BaseSchema):
+	limit: int = Query(default=cfg.app.default_limit, ge=1, le=cfg.app.maximum_limit, description="Количество элементов")
+	offset: int = Query(default=cfg.app.default_offset, ge=0, description="Смещение")
