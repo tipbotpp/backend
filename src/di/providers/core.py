@@ -2,17 +2,16 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from dishka import Provider, Scope, provide
-from redis.asyncio import Redis, ConnectionPool
+from redis.asyncio import ConnectionPool, Redis
 from sqlalchemy.ext.asyncio import (
 	AsyncEngine,
 	AsyncSession,
 	async_sessionmaker,
 )
 
-from src.core.config import cfg
+from src.core.cache import create_redis_client, create_redis_pool
 from src.core.db import create_engine, create_session_factory
 from src.core.storages import get_s3_client, get_s3_external_client
-from src.core.cache import create_redis_client, create_redis_pool
 from src.services.logger import AbstractLogger, get_logger
 
 
