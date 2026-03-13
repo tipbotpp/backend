@@ -44,17 +44,17 @@ def async_ttl_cache(
 			if (item := cache.get(key)) is not None:
 				expires_at, value = item
 				if is_fresh(expires_at):
-					return value
+					return value  # ty:ignore[invalid-return-type]
 
 			async with locks[key]:
 				item = cache.get(key)
 				if item is not None:
 					expires_at, value = item
 					if is_fresh(expires_at):
-						return value
+						return value  # ty:ignore[invalid-return-type]
 
 				value = await func(*args, **kwargs)
-				cache[key] = (now + ttl_seconds, value)
+				cache[key] = (now + ttl_seconds, value)  # ty:ignore[invalid-assignment]
 				return value
 
 		return wrapper

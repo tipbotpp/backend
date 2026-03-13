@@ -1,3 +1,4 @@
+"""Маппер для преобразования сущностей из одной в другую"""
 # ruff: noqa: PLR0911, UP047
 from __future__ import annotations
 
@@ -21,7 +22,7 @@ def map_value(value: Any, target_type: type[Any]) -> Any:
     - примитивы (int, str, bool, и т.п.) — возвращаются как есть
     """
     if value is None:
-        return None
+        return Noneц
 
     # Any — ничего не делаем
     if target_type is Any:

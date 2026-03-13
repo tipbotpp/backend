@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from src.core.config import cfg
+from src.core.configs import cfg
 
 
 class DateTimeLocal:
