@@ -7,7 +7,7 @@ from typing import Any
 from aiobotocore.session import get_session
 from botocore.config import Config
 
-from src.core.config import cfg
+from src.core.configs import cfg
 
 
 @asynccontextmanager
