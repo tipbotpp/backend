@@ -1,8 +1,11 @@
-from sqlalchemy import event
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncSession, AsyncEngine
+from sqlalchemy.ext.asyncio import (
+	AsyncEngine,
+	AsyncSession,
+	async_sessionmaker,
+	create_async_engine,
+)
 
-from src.core.config import cfg
-from src.core.db.soft_delete import filter_soft_deleted
+from src.core.configs import cfg
 
 
 def create_engine() -> AsyncEngine:
@@ -37,6 +40,5 @@ def create_session_factory(
 		autoflush=False,
 		autocommit=False,
 	)
-	event.listen(factory.class_, "do_orm_execute", filter_soft_deleted)
 	return factory
 
