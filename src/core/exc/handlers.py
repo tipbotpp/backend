@@ -3,6 +3,8 @@
 import traceback
 from typing import Never, cast
 
+from aiogram import Router
+from aiogram.types import ErrorEvent
 from asyncpg.exceptions import ForeignKeyViolationError, UniqueViolationError
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
@@ -14,6 +16,18 @@ from starlette.types import ExceptionHandler
 from src.services.logger import get_logger
 
 logger = get_logger()
+
+error_router = Router()
+
+
+@error_router.error()
+async def handle_bot_error(event: ErrorEvent) -> None:
+	logger.error(
+		"Unhandled bot error",
+		update=event.update.model_dump(exclude_none=True) if event.update else None,
+		error=str(event.exception),
+		exc_info=event.exception,
+	)
 
 
 class ExceptionHandlers:
