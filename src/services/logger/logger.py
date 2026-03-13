@@ -6,7 +6,7 @@ from typing import Any, cast
 
 import structlog
 
-from src.core.config import cfg
+from src.core.configs import cfg
 from src.services.logger.interfaces import AbstractLogger
 
 # Контекстные переменные для HTTP-запросов
