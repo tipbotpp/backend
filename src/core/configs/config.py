@@ -10,7 +10,7 @@ from pydantic_settings import (
 	TomlConfigSettingsSource,
 )
 
-from src.core.configs.app import App, Logging
+from src.core.configs.app import App, Auth, Logging
 from src.core.configs.bot import Bot
 from src.core.configs.database import Database
 from src.core.configs.infrastructure import S3, Redis
@@ -45,6 +45,7 @@ class Config(BaseSettings):
 	)
 
 	app: App = App()
+	auth: Auth = Auth()
 	bot: Bot = Bot()
 	database: Database = Database()
 	s3: S3 = S3()
