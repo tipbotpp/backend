@@ -3,6 +3,32 @@
 run:
 	uv run python3 -m src
 
+# ——————— keys ———————
+KEYS_DIR ?= .keys
+
+.PHONY: keys/generate
+keys/generate:
+	@mkdir -p $(KEYS_DIR)
+	@openssl genrsa -out $(KEYS_DIR)/private.pem 2048
+	@openssl rsa -in $(KEYS_DIR)/private.pem -pubout -out $(KEYS_DIR)/public.pem
+	@echo ""
+	@echo "✅ Ключи сгенерированы в $(KEYS_DIR)/"
+	@echo ""
+	@echo "Вставь в config.toml:"
+	@echo ""
+	@echo "[auth]"
+	@awk 'NR==1{printf "jwt_private_key = \"\"\"\n"} {print} END{printf "\"\"\"\n"}' $(KEYS_DIR)/private.pem
+	@echo ""
+	@awk 'NR==1{printf "jwt_public_key = \"\"\"\n"} {print} END{printf "\"\"\"\n"}' $(KEYS_DIR)/public.pem
+
+.PHONY: keys/show
+keys/show:
+	@echo "=== PRIVATE KEY ==="
+	@cat $(KEYS_DIR)/private.pem
+	@echo ""
+	@echo "=== PUBLIC KEY ==="
+	@cat $(KEYS_DIR)/public.pem
+
 # ——————— lines ———————
 .PHONY: lines/scc
 lines/scc:
