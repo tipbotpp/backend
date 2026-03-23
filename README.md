@@ -33,9 +33,32 @@ uv sync --dev
 cp config.example.toml config.toml
 # edit config.toml
 
+# Generate RSA keys for JWT (RS256)
+make keys/generate
+# Скопируй вывод в секцию [auth] в config.toml
+
 # Run
 make run
 ```
+
+## JWT (RS256)
+
+Проект использует асимметричное подписание токенов (RS256):
+
+- **Приватный ключ** — только у бэкенда, подписывает токены при логине
+- **Публичный ключ** — можно раздавать любым сервисам (tipbot-ml и др.), они верифицируют токены самостоятельно без доступа к секрету
+- **`GET /.well-known/jwks.json`** — эндпоинт автоматической публикации публичного ключа (стандарт JWKS)
+
+```bash
+# Сгенерировать ключевую пару
+make keys/generate
+
+# Вручную (если нет make)
+openssl genrsa -out .keys/private.pem 2048
+openssl rsa -in .keys/private.pem -pubout -out .keys/public.pem
+```
+
+> ⚠️ Никогда не коммить `.keys/` и `config.toml` в репозиторий.
 
 ## Project structure
 
@@ -70,6 +93,8 @@ make revision         # Create alembic migration
 make upgrade          # Apply migrations
 make test             # Run unit tests
 make test/coverage    # Tests with coverage report
+make keys/generate    # Generate RSA key pair for JWT, output ready for config.toml
+make keys/show        # Print existing keys from .keys/
 ```
 
 ## License
