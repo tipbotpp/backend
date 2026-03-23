@@ -8,7 +8,6 @@ class TelegramAuthBody(BaseSchema):
 
 
 class AuthUserResponse(BaseSchema):
-	id: int
 	telegram_id: int
 	username: str | None
 	role: str | None
