@@ -19,7 +19,7 @@ dependencies = [
     "redis>=7.1.0",
     "sqlalchemy>=2.0.46",
     "structlog>=25.5.0",
-    "pyjwt>=2.11.0",
+    "pyjwt[cryptography]>=2.11.0",
     "aiogram>=3.26.0",
 ]
 
