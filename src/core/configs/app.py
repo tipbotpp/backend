@@ -79,6 +79,40 @@ class App(BaseModel):
 			"Когда менять → указывайте конкретные домены в проде."
 		),
 	)
+	mini_app_url: str = Field(
+		default="https://t.me/your_bot/app",
+		description=(
+			"URL Telegram Mini App.\n"
+			"Когда менять → укажите ссылку вида https://t.me/<bot>/<app_short_name>."
+		),
+	)
+
+
+class Auth(BaseModel):
+	jwt_private_key: str = Field(
+		default="",
+		description=(
+			"RSA приватный ключ в формате PEM для подписи JWT (RS256).\n"
+			"Генерация: `openssl genrsa -out private.pem 2048`\n"
+			"Когда менять → генерируйте уникальную пару ключей для каждого окружения."
+		),
+	)
+	jwt_public_key: str = Field(
+		default="",
+		description=(
+			"RSA публичный ключ в формате PEM для верификации JWT.\n"
+			"Генерация: `openssl rsa -in private.pem -pubout -out public.pem`\n"
+			"Можно раздавать другим сервисам — они верифицируют токены без приватного ключа."
+		),
+	)
+	jwt_algorithm: str = Field(
+		default="RS256",
+		description="Алгоритм подписи JWT. RS256 — асимметричный, рекомендуется для мультисервисной архитектуры.",
+	)
+	jwt_expire_seconds: int = Field(
+		default=2592000,
+		description="Время жизни JWT токена в секундах. По умолчанию 30 дней.",
+	)
 
 
 class Logging(BaseModel):
