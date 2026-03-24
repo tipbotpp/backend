@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import CallbackQuery, Message
@@ -12,85 +10,78 @@ from src.models.users import Users
 from src.repos import sql
 from src.schemas.enums.users import UserRole
 
+router = Router(name="start_router")
+kb = StartKeyboards()
+
 _VIEWER_START_BALANCE = 100
 
 
-def build_start_router() -> Router:
-	router = Router(name="start_router")
-	kb = StartKeyboards()
+@router.message(CommandStart())
+async def cmd_start(message: Message, user: Users) -> None:
+	if message.from_user is None:
+		return
 
-	@router.message(CommandStart())
-	async def cmd_start(message: Message, user: Users) -> None:
-		"""
-		/start — приветствие.
-		UserMiddleware уже создал/обновил юзера и положил его в data["user"].
-		"""
-		if message.from_user is None:
-			return
+	name = message.from_user.first_name or message.from_user.username or "друг"
 
-		name = message.from_user.first_name or message.from_user.username or "друг"
-
-		if user.role is None:
-			await message.answer(
-				StartText.welcome_new(name),
-				reply_markup=kb.role_selection(),
-				parse_mode="HTML",
-			)
-		elif user.role == UserRole.VIEWER:
-			await message.answer(
-				StartText.welcome_viewer(name),
-				reply_markup=kb.viewer_menu(),
-				parse_mode="HTML",
-			)
-		else:
-			await message.answer(
-				StartText.welcome_streamer(name),
-				reply_markup=kb.streamer_menu(),
-				parse_mode="HTML",
-			)
-
-	@router.callback_query(RoleCallback.filter())
-	async def cb_select_role(
-		callback: CallbackQuery,
-		callback_data: RoleCallback,
-		user: Users,
-		session: FromDishka[AsyncSession],
-	) -> None:
-		"""Выбор роли — аналог PATCH /users/me/role."""
-		await callback.answer()
-
-		if user.role is not None:
-			await callback.message.edit_text(  # type: ignore[union-attr]
-				StartText.role_already_set(),
-				reply_markup=None,
-			)
-			return
-
-		try:
-			role = UserRole(callback_data.value)
-		except ValueError:
-			return
-
-		new_balance = _VIEWER_START_BALANCE if role is UserRole.VIEWER else None
-
-		await sql.users_repo.update_role(
-			session,
-			user.telegram_id,
-			role.value,
-			balance=new_balance,
+	if user.role is None:
+		await message.answer(
+			StartText.welcome_new(name),
+			reply_markup=kb.role_selection(),
+			parse_mode="HTML",
+		)
+	elif user.role == UserRole.VIEWER:
+		await message.answer(
+			StartText.welcome_viewer(name),
+			reply_markup=kb.viewer_menu(),
+			parse_mode="HTML",
+		)
+	else:
+		await message.answer(
+			StartText.welcome_streamer(name),
+			reply_markup=kb.streamer_menu(),
+			parse_mode="HTML",
 		)
 
-		if role is UserRole.VIEWER:
-			await callback.message.edit_text(  # type: ignore[union-attr]
-				StartText.role_set_viewer(),
-				reply_markup=StartKeyboards().viewer_menu(),
-				parse_mode="HTML",
-			)
-		else:
-			await callback.message.edit_text(  # type: ignore[union-attr]
-				StartText.role_set_streamer(),
-				reply_markup=StartKeyboards().streamer_menu(),
-				parse_mode="HTML",
-			)
 
-	return router
+@router.callback_query(RoleCallback.filter())
+async def cb_select_role(
+	callback: CallbackQuery,
+	callback_data: RoleCallback,
+	user: Users,
+	session: FromDishka[AsyncSession],
+) -> None:
+	await callback.answer()
+
+	if user.role is not None:
+		await callback.message.edit_text(  # type: ignore[union-attr]
+			StartText.role_already_set(),
+			reply_markup=None,
+		)
+		return
+
+	try:
+		role = UserRole(callback_data.value)
+	except ValueError:
+		return
+
+	new_balance = _VIEWER_START_BALANCE if role is UserRole.VIEWER else None
+
+	await sql.users_repo.update_role(
+		session,
+		user.telegram_id,
+		role.value,
+		balance=new_balance,
+	)
+
+	if role is UserRole.VIEWER:
+		await callback.message.edit_text(  # type: ignore[union-attr]
+			StartText.role_set_viewer(),
+			reply_markup=StartKeyboards().viewer_menu(),
+			parse_mode="HTML",
+		)
+	else:
+		await callback.message.edit_text(  # type: ignore[union-attr]
+			StartText.role_set_streamer(),
+			reply_markup=StartKeyboards().streamer_menu(),
+			parse_mode="HTML",
+		)
