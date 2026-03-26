@@ -6,9 +6,10 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-
 from src.core.configs import cfg
-from src.models import Base  # все модели подтягиваются через src/models/__init__.py
+from src.models import (
+    Base,  # все модели подтягиваются через src/models/__init__.py
+)
 
 alembic_cfg = context.config
 
