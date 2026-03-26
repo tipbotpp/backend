@@ -21,19 +21,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Notify Start
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: markdown
-          message: |
-            🔍 **Запуск линтера (ruff)**
-            Репозиторий: `${{ github.repository }}`
-            Ветка: `${{ github.ref }}`
-            Автор: `${{ github.actor }}`
-            🔗 [Открыть workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -54,19 +41,6 @@ jobs:
 
       - name: Run ruff
         run: ruff check . $RUFF_FLAGS
-
-      - name: Notify Success
-        if: success()
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: markdown
-          message: |
-            ✅ **Линтер (ruff) прошел успешно**
-            Репозиторий: `${{ github.repository }}`
-            Ветка: `${{ github.ref }}`
-            🔗 [Workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`)
 
       - name: Notify Failure
         if: failure()
