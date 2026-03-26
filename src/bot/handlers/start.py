@@ -53,8 +53,12 @@ async def cb_select_role(
 ) -> None:
 	await callback.answer()
 
+	msg = callback.message
+	if not isinstance(msg, Message):
+		return
+
 	if user.role is not None:
-		await callback.message.edit_text(  # type: ignore[union-attr]
+		await msg.edit_text(
 			StartText.role_already_set(),
 			reply_markup=None,
 		)
@@ -75,13 +79,13 @@ async def cb_select_role(
 	)
 
 	if role is UserRole.VIEWER:
-		await callback.message.edit_text(  # type: ignore[union-attr]
+		await msg.edit_text(
 			StartText.role_set_viewer(),
 			reply_markup=StartKeyboards().viewer_menu(),
 			parse_mode="HTML",
 		)
 	else:
-		await callback.message.edit_text(  # type: ignore[union-attr]
+		await msg.edit_text(
 			StartText.role_set_streamer(),
 			reply_markup=StartKeyboards().streamer_menu(),
 			parse_mode="HTML",
