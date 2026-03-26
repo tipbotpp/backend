@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 class App(BaseModel):
 	title: str = Field(
-		default="FastAPI Application",
+		default="TipBot API",
 		description=(
 			"Название приложения, отображаемое в документации и заголовке сервера.\n"
 			"Когда менять → используйте понятное название вашего приложения."
