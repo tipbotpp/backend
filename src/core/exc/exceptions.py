@@ -2,7 +2,6 @@ from fastapi import status
 
 from .base import BaseHTTPException
 
-
 # ── Auth ─────────────────────────────────────────────────────────────────────
 
 class InvalidInitDataError(BaseHTTPException):
