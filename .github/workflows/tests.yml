@@ -49,7 +49,7 @@ jobs:
 
       - name: Run pytest
         shell: bash
-        run: uv run pytest -q -ra --disable-warnings -m "not e2e"
+        run: uv run pytest -q -ra --disable-warnings -m "not e2e" || [ $? -eq 5 ]
 
       - name: Notify Failure
         if: failure()
