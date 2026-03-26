@@ -45,14 +45,54 @@ jobs:
           export MINIO_ROOT_USER="${{ secrets.MINIO_ROOT_USER }}"
           export MINIO_ROOT_PASSWORD="${{ secrets.MINIO_ROOT_PASSWORD }}"
           export DOCKER_BUILDKIT=1
-          docker compose down
           git pull --rebase
 
           rm -f config.toml
           touch config.toml
+          echo '[app]' >> config.toml
+          echo 'title = "TipBot"' >> config.toml
+          echo 'mini_app_url = "${{ secrets.DEV_MINI_APP_URL }}"' >> config.toml
           echo '' >> config.toml
+          echo '[bot]' >> config.toml
+          echo 'token = "${{ secrets.DEV_BOT_TOKEN }}"' >> config.toml
+          echo 'drop_pending_updates = true' >> config.toml
+          echo '' >> config.toml
+          echo '[database]' >> config.toml
+          echo 'username = "${{ secrets.DEV_POSTGRES_USERNAME }}"' >> config.toml
+          echo 'password = "${{ secrets.DEV_POSTGRES_PASSWORD }}"' >> config.toml
+          echo 'db = "${{ secrets.DEV_POSTGRES_DB }}"' >> config.toml
+          echo 'host = "${{ secrets.DEV_POSTGRES_HOST }}"' >> config.toml
+          echo 'port = 5432' >> config.toml
+          echo 'echo = false' >> config.toml
+          echo '' >> config.toml
+          echo '[redis]' >> config.toml
+          echo 'host = "${{ secrets.DEV_REDIS_HOST }}"' >> config.toml
+          echo 'port = 6379' >> config.toml
+          echo 'db = 0' >> config.toml
+          echo 'password = "${{ secrets.DEV_REDIS_PASSWORD }}"' >> config.toml
+          echo '' >> config.toml
+          echo '[s3]' >> config.toml
+          echo 'aws_host = "${{ secrets.DEV_S3_HOST }}"' >> config.toml
+          echo 'aws_host_internal = "${{ secrets.DEV_S3_HOST_INTERNAL }}"' >> config.toml
+          echo 'aws_host_external = "${{ secrets.DEV_S3_HOST_EXTERNAL }}"' >> config.toml
+          echo 'aws_access_key = "${{ secrets.MINIO_ROOT_USER }}"' >> config.toml
+          echo 'aws_secret_access_key = "${{ secrets.MINIO_ROOT_PASSWORD }}"' >> config.toml
+          echo 'aws_bucket = "${{ secrets.DEV_S3_BUCKET }}"' >> config.toml
+          echo '' >> config.toml
+          echo '[auth]' >> config.toml
+          echo 'jwt_private_key = """' >> config.toml
+          printf '%s' '${{ secrets.DEV_JWT_PRIVATE_KEY_B64 }}' | base64 -d >> config.toml
+          echo '' >> config.toml
+          echo '"""' >> config.toml
+          echo 'jwt_public_key = """' >> config.toml
+          printf '%s' '${{ secrets.DEV_JWT_PUBLIC_KEY_B64 }}' | base64 -d >> config.toml
+          echo '' >> config.toml
+          echo '"""' >> config.toml
+          echo '' >> config.toml
+          echo '[logging]' >> config.toml
+          echo 'level = "INFO"' >> config.toml
 
-          docker compose up --build -d restapi
+          docker compose -f ${{ secrets.DEV_INFRA_DIR }}/docker-compose.yaml up --build -d backend
           EOF
 
       - name: Notify Success
