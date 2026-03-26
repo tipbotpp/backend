@@ -11,10 +11,9 @@ import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.configs import cfg
-from src.repos import redis, sql
+from src.repos import sql
 from src.repos.redis import sessions_repo
 from src.schemas.dataclasses.users import UserCreateDTO, UserDTO
-from src.schemas.enums.users import UserRole
 
 _VIEWER_START_BALANCE = 100
 
