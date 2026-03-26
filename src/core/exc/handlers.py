@@ -95,7 +95,12 @@ class ExceptionHandlers:
 		exc: exc.IntegrityError,
 	) -> JSONResponse:
 		self.log.error(traceback.format_exc())
-		code = exc.orig.pgcode
+		if exc.orig is None:
+			return JSONResponse(
+				status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+				content={"detail": "Внутренняя ошибка сервера."},
+			)
+		code = getattr(exc.orig, "pgcode", None)
 		if code == UniqueViolationError.sqlstate:
 			return JSONResponse(
 				status_code=status.HTTP_409_CONFLICT,
