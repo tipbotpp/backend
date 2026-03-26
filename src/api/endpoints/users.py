@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from dishka.integrations.fastapi import DishkaRoute, FromDishka
-from fastapi import APIRouter, Depends
+from dishka.integrations.fastapi import DishkaRoute, FromDishka, inject
+from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exc.exceptions import InvalidRoleError, RoleAlreadySetError
-from src.di.api.auth import get_current_user
+from src.di.deps.auth import CurrentUserDep
 from src.repos import sql
-from src.schemas.dataclasses.users import UserDTO
 from src.schemas.enums.users import UserRole
 from src.schemas.pydantic import users as users_schema
 from src.utils.mappers import map_model
@@ -18,17 +17,19 @@ _VIEWER_START_BALANCE = 100
 
 
 @router.get("/me", response_model=users_schema.UserResponse)
+@inject
 async def get_me(
-	user: UserDTO = Depends(get_current_user),
+	user: CurrentUserDep,
 ) -> users_schema.UserResponse:
 	return map_model(user, users_schema.UserResponse)
 
 
 @router.patch("/me/role", response_model=users_schema.UserRoleResponse)
+@inject
 async def set_role(
 	body: users_schema.UserRoleBody,
 	session: FromDishka[AsyncSession],
-	user: UserDTO = Depends(get_current_user),
+	user: CurrentUserDep,
 ) -> users_schema.UserRoleResponse:
 	"""
 	Выбор роли. Разрешён только один раз (пока роль = null).
