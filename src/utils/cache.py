@@ -2,7 +2,7 @@ import asyncio
 import time
 from collections import defaultdict
 from collections.abc import Awaitable, Callable, Hashable
-from typing import ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -28,7 +28,7 @@ def async_ttl_cache(
 		- Кеш per-instance (не shared между воркерами)
 		- Используй Redis для shared cache
 	"""
-	cache: dict[Hashable, tuple[float, T]] = {}
+	cache: dict[Hashable, tuple[float, Any]] = {}
 	locks: defaultdict[Hashable, asyncio.Lock] = defaultdict(asyncio.Lock)
 
 	def is_fresh(expires_at: float) -> bool:
@@ -44,17 +44,17 @@ def async_ttl_cache(
 			if (item := cache.get(key)) is not None:
 				expires_at, value = item
 				if is_fresh(expires_at):
-					return value  # ty:ignore[invalid-return-type]
+					return value
 
 			async with locks[key]:
 				item = cache.get(key)
 				if item is not None:
 					expires_at, value = item
 					if is_fresh(expires_at):
-						return value  # ty:ignore[invalid-return-type]
+						return value
 
 				value = await func(*args, **kwargs)
-				cache[key] = (now + ttl_seconds, value)  # ty:ignore[invalid-assignment]
+				cache[key] = (now + ttl_seconds, value)
 				return value
 
 		return wrapper
