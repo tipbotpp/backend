@@ -55,24 +55,31 @@ pre-commit/install:
 pre-commit/run:
 	uv run pre-commit run --all-files
 
-# ——————— ruff ———————
+# ——————— ruff & ty ———————
 .PHONY: format
 format:
 	@ruff format . > /dev/null 2>&1
-	@echo "code formatted"
+	@echo "✓ Code formatted"
 
 .PHONY: lint
 lint:
-	ruff check .
+	@echo "→ Checking code style..."
+	@ruff check .
 
 .PHONY: lint/fix
 lint/fix:
-	ruff check . --fix
+	@echo "→ Auto-fixing issues..."
+	@ruff check . --fix
+	@echo "✓ Fixed"
+
+.PHONY: typecheck
+typecheck:
+	@echo "→ Type checking..."
+	@ty check
 
 .PHONY: check
-check:
-	ruff check .
-#	ruff format --check .
+check: lint typecheck
+	@echo "✓ All checks passed"
 
 # ——————— alembic ———————
 .PHONY: revision
