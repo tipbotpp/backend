@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, TypeAlias
 
 from fastapi import Depends
 
@@ -12,4 +12,4 @@ def _pagination(
 	return PaginationDTO(limit=params.limit, offset=params.offset)
 
 
-PaginationDep: type = Annotated[PaginationDTO, Depends(_pagination)]
+PaginationDep: TypeAlias = Annotated[PaginationDTO, Depends(_pagination)]
