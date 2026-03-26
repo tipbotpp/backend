@@ -17,20 +17,6 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Notify Start
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: markdown
-          message: |
-            🧪 **Запуск тестов**
-            Репозиторий: `${{ github.repository }}`
-            Ветка: `${{ github.ref }}`
-            Автор: `${{ github.actor }}`
-            Триггер: `${{ github.event_name }}`
-            🔗 [Открыть workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -64,19 +50,6 @@ jobs:
       - name: Run pytest
         shell: bash
         run: uv run pytest -q -ra --disable-warnings -m "not e2e"
-
-      - name: Notify Success
-        if: success()
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: markdown
-          message: |
-            ✅ **Тесты пройдены успешно**
-            Репозиторий: `${{ github.repository }}`
-            Ветка: `${{ github.ref }}`
-            🔗 [Workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`)
 
       - name: Notify Failure
         if: failure()
