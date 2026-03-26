@@ -1,7 +1,7 @@
 from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import CallbackQuery, Message
-from dishka.integrations.aiogram import FromDishka
+from dishka.integrations.aiogram import FromDishka, inject
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.keyboards.start import RoleCallback, StartKeyboards
@@ -44,6 +44,7 @@ async def cmd_start(message: Message, user: Users) -> None:
 
 
 @router.callback_query(RoleCallback.filter())
+@inject
 async def cb_select_role(
 	callback: CallbackQuery,
 	callback_data: RoleCallback,
