@@ -5,9 +5,11 @@ import hmac
 import json
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import cast
 from urllib.parse import parse_qsl
 
 import jwt
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.configs import cfg
@@ -94,7 +96,7 @@ def decode_token(token: str) -> dict[str, object]:
 
 async def authenticate(
 	session: AsyncSession,
-	redis_client: object,
+	redis_client: Redis,
 	init_data: str,
 ) -> tuple[UserDTO, bool]:
 	"""
@@ -104,23 +106,25 @@ async def authenticate(
 	params = _validate_init_data(init_data)
 	tg_user = _parse_tg_user(params)
 
-	telegram_id: int = int(tg_user["id"])
+	telegram_id: int = int(cast(int | str, tg_user["id"]))
 	user = await sql.users_repo.get_by_telegram_id(session, telegram_id)
 
 	if user is not None:
 		return user, False
 
+	username = tg_user.get("username")
+	display_name = tg_user.get("first_name")
 	dto = UserCreateDTO(
 		telegram_id=telegram_id,
-		username=tg_user.get("username"),
-		display_name=tg_user.get("first_name"),
+		username=str(username) if username is not None else None,
+		display_name=str(display_name) if display_name is not None else None,
 	)
 	user = await sql.users_repo.create(session, dto)
 	return user, True
 
 
 async def create_session(
-	redis_client: object,
+	redis_client: Redis,
 	telegram_id: int,
 ) -> tuple[str, str]:
 	"""
@@ -138,7 +142,7 @@ async def create_session(
 
 
 async def verify_session(
-	redis_client: object,
+	redis_client: Redis,
 	token: str,
 ) -> int:
 	"""
@@ -146,7 +150,7 @@ async def verify_session(
 	Возвращает telegram_id или бросает исключение.
 	"""
 	payload = decode_token(token)
-	jti: str = payload["jti"]  # type: ignore[assignment]
+	jti = cast(str, payload["jti"])
 
 	telegram_id = await sessions_repo.get_telegram_id(redis_client, jti)
 	if telegram_id is None:
