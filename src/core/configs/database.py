@@ -46,7 +46,7 @@ class Database(BaseModel):
 
 	# ── Логирование ─────────────────────────────────────────────────────────────
 	echo: bool = Field(
-		default=True,
+		default=False,
 		description=(
 			"Включить подробный SQL-лог (`echo=True`).\n"
 			"Когда менять → включайте на dev/CI для отладки; выключайте в проде."
