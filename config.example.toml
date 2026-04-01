@@ -8,7 +8,7 @@ port = 8000
 workers = 1
 reload = false
 debug = false
-tz_offset_hours = 3.0
+tz_name = "Europe/Moscow"
 default_offset = 0
 default_limit = 20
 maximum_limit = 100
@@ -98,3 +98,14 @@ jwt_public_key = """
 # ================================
 [logging]
 level = "INFO"
+
+
+# ================================
+#  DEV SETTINGS (только для разработки!)
+# ================================
+[dev]
+enabled = false
+telegram_id = 100000001
+username = "dev_user"
+display_name = "Dev User"
+mock_init_data = "your_secret_dev_token_here"
