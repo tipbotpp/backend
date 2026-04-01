@@ -3,13 +3,12 @@ from __future__ import annotations
 import jwt
 from dishka import Provider, Scope, provide
 from fastapi import Request
-from redis.asyncio import Redis
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exc.exceptions import InvalidTokenError, UserNotFoundError
 from src.repos import sql
 from src.schemas.dataclasses.users import UserDTO
-from src.services import auth as auth_service
+from src.services.auth import AuthService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AuthProvider(Provider):
@@ -18,7 +17,7 @@ class AuthProvider(Provider):
 		self,
 		request: Request,
 		session: AsyncSession,
-		redis: Redis,
+		auth_service: AuthService,
 	) -> UserDTO:
 		auth_header = request.headers.get("Authorization")
 		if not auth_header or not auth_header.startswith("Bearer "):
@@ -27,7 +26,7 @@ class AuthProvider(Provider):
 		token = auth_header.removeprefix("Bearer ").strip()
 
 		try:
-			telegram_id = await auth_service.verify_session(redis, token)
+			telegram_id = await auth_service.verify_session(token)
 		except (jwt.PyJWTError, ValueError):
 			raise InvalidTokenError
 
