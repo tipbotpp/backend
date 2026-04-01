@@ -8,6 +8,7 @@ from aiogram import Bot, Dispatcher
 from dishka import AsyncContainer
 from dishka.integrations.aiogram import setup_dishka as setup_dishka_aiogram
 from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.bot.handlers import router as bot_router
 from src.core.configs import cfg
@@ -15,9 +16,29 @@ from src.core.db import create_engine, create_session_factory
 from src.core.exc.handlers import error_router
 from src.core.middlewares.logging import LoggingMiddleware
 from src.core.middlewares.user import UserMiddleware
+from src.repos import sql
+from src.schemas.dataclasses.users import UserCreateDTO
 from src.services.logger import AbstractLogger, get_logger
 
 logger: AbstractLogger = get_logger()
+
+
+async def _ensure_dev_user(session_factory: async_sessionmaker) -> None:
+	async with session_factory() as session:
+		existing = await sql.users_repo.get_by_telegram_id(session, cfg.dev.telegram_id)
+		if existing is None:
+			await sql.users_repo.create(
+				session,
+				UserCreateDTO(
+					telegram_id=cfg.dev.telegram_id,
+					username=cfg.dev.username,
+					display_name=cfg.dev.display_name,
+				),
+			)
+			await session.commit()
+			logger.info("Dev user created", telegram_id=cfg.dev.telegram_id)
+		else:
+			logger.info("Dev user already exists", telegram_id=cfg.dev.telegram_id)
 
 
 @asynccontextmanager
@@ -30,6 +51,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 	# ========== Database ==========
 	engine = create_engine()
 	session_factory = create_session_factory(engine)
+
+	# ========== Dev user ==========
+	if cfg.dev.enabled:
+		await _ensure_dev_user(session_factory)
 
 	# ========== Bot ==========
 	bot = Bot(token=cfg.bot.token)
