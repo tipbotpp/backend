@@ -62,6 +62,31 @@ async def update_role(
 	return map_model(instance, UserDTO)
 
 
+async def update_profile(
+	session: AsyncSession,
+	telegram_id: int,
+	username: str | None,
+	display_name: str | None,
+	avatar_url: str | None,
+) -> UserDTO | None:
+	instance = await session.get(Users, telegram_id)
+	if instance is None:
+		return None
+	changed = False
+	for field, value in (
+		("username", username),
+		("display_name", display_name),
+		("avatar_url", avatar_url),
+	):
+		if value is not None and getattr(instance, field) != value:
+			setattr(instance, field, value)
+			changed = True
+	if changed:
+		await session.flush()
+		await session.refresh(instance)
+	return map_model(instance, UserDTO)
+
+
 async def update_balance(session: AsyncSession, telegram_id: int, new_balance: int) -> UserDTO | None:
 	instance = await session.get(Users, telegram_id)
 	if instance is None:
