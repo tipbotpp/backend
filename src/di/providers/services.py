@@ -1,7 +1,6 @@
+from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from dishka import Provider, Scope, provide
 
 from src.services.auth import AuthService
 from src.services.balance import BalanceService
