@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, func
@@ -6,6 +6,8 @@ from sqlalchemy.orm import (
 	Mapped,
 	mapped_column,
 )
+
+from src.utils import local_time
 
 if TYPE_CHECKING:
 	from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,14 +18,14 @@ class TimestampMixin:
 
 	created_at: Mapped[datetime] = mapped_column(
 		DateTime(timezone=True),
-		default=lambda: datetime.now(UTC),
+		default=local_time.now,
 		server_default=func.now(),
 	)
 	updated_at: Mapped[datetime] = mapped_column(
 		DateTime(timezone=True),
-		default=lambda: datetime.now(UTC),
+		default=local_time.now,
 		server_default=func.now(),
-		onupdate=lambda: datetime.now(UTC),
+		onupdate=local_time.now,
 		server_onupdate=func.now(),
 	)
 
@@ -40,7 +42,7 @@ class SoftDeleteMixin:
 
 	async def soft_delete(self, session: "AsyncSession") -> None:
 		"""Мягкое удаление записи (установка deleted_at)."""
-		self.deleted_at = datetime.now(UTC)
+		self.deleted_at = local_time.now()
 		session.add(self)
 		await session.commit()
 
