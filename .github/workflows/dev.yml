@@ -52,6 +52,7 @@ jobs:
           echo '[app]' >> config.toml
           echo 'title = "TipBot"' >> config.toml
           echo 'mini_app_url = "${{ secrets.DEV_MINI_APP_URL }}"' >> config.toml
+          echo 'tz_name = "${{ secrets.APP_TZ_NAME }}"' >> config.toml
           echo '' >> config.toml
           echo '[bot]' >> config.toml
           echo 'token = "${{ secrets.DEV_BOT_TOKEN }}"' >> config.toml
@@ -62,13 +63,13 @@ jobs:
           echo 'password = "${{ secrets.DEV_POSTGRES_PASSWORD }}"' >> config.toml
           echo 'db = "${{ secrets.DEV_POSTGRES_DB }}"' >> config.toml
           echo 'host = "${{ secrets.DEV_POSTGRES_HOST }}"' >> config.toml
-          echo 'port = 5432' >> config.toml
+          echo 'port = ${{ secrets.DEV_POSTGRES_PORT }}' >> config.toml
           echo 'echo = false' >> config.toml
           echo '' >> config.toml
           echo '[redis]' >> config.toml
           echo 'host = "${{ secrets.DEV_REDIS_HOST }}"' >> config.toml
-          echo 'port = 6379' >> config.toml
-          echo 'db = 0' >> config.toml
+          echo 'port = ${{ secrets.DEV_REDIS_PORT }}' >> config.toml
+          echo 'db = ${{ secrets.DEV_REDIS_DB }}' >> config.toml
           echo 'password = "${{ secrets.DEV_REDIS_PASSWORD }}"' >> config.toml
           echo '' >> config.toml
           echo '[s3]' >> config.toml
@@ -91,6 +92,13 @@ jobs:
           echo '' >> config.toml
           echo '[logging]' >> config.toml
           echo 'level = "INFO"' >> config.toml
+          echo '' >> config.toml
+          echo '[dev]' >> config.toml
+          echo 'enabled = ${{ secrets.DEV_MODE_ENABLED }}' >> config.toml
+          echo 'telegram_id = ${{ secrets.DEV_MODE_TELEGRAM_ID }}' >> config.toml
+          echo 'username = "${{ secrets.DEV_MODE_USERNAME }}"' >> config.toml
+          echo 'display_name = "${{ secrets.DEV_MODE_DISPLAY_NAME }}"' >> config.toml
+          echo 'mock_init_data = "${{ secrets.DEV_MODE_MOCK_INIT_DATA }}"' >> config.toml
 
           docker compose -f ${{ secrets.DEV_INFRA_DIR }}/docker-compose.yaml up --build -d backend
           EOF
