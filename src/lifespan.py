@@ -8,7 +8,7 @@ from aiogram import Bot, Dispatcher
 from dishka import AsyncContainer
 from dishka.integrations.aiogram import setup_dishka as setup_dishka_aiogram
 from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from src.bot.handlers import router as bot_router
 from src.core.configs import cfg
