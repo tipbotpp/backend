@@ -47,11 +47,11 @@ class App(BaseModel):
 			"Когда менять → включайте на dev/CI для отладки; выключайте в проде."
 		),
 	)
-	tz_offset_hours: float = Field(
-		default=3.0,
+	tz_name: str = Field(
+		default="Europe/Moscow",
 		description=(
-			"Смещение часового пояса относительно UTC.\n"
-			"Когда менять → используйте 3.0 для Москвы."
+			"IANA-имя часового пояса (например, 'Europe/Moscow', 'UTC', 'America/New_York').\n"
+			"Когда менять → укажите нужный часовой пояс для вашего окружения."
 		),
 	)
 	default_offset: int = Field(
