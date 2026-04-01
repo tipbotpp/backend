@@ -62,6 +62,16 @@ async def update_role(
 	return map_model(instance, UserDTO)
 
 
+async def update_balance(session: AsyncSession, telegram_id: int, new_balance: int) -> UserDTO | None:
+	instance = await session.get(Users, telegram_id)
+	if instance is None:
+		return None
+	instance.balance = new_balance
+	await session.flush()
+	await session.refresh(instance)
+	return map_model(instance, UserDTO)
+
+
 async def delete(session: AsyncSession, id: int) -> None:
 	instance = await session.get(Users, id)
 	if instance is not None:
