@@ -50,8 +50,53 @@ jobs:
           
           rm -f config.toml
           touch config.toml
+          echo '[app]' >> config.toml
+          echo 'title = "TipBot"' >> config.toml
+          echo 'mini_app_url = "${{ secrets.MAIN_MINI_APP_URL }}"' >> config.toml
+          echo 'tz_name = "${{ secrets.APP_TZ_NAME }}"' >> config.toml
           echo '' >> config.toml
-          
+          echo '[bot]' >> config.toml
+          echo 'token = "${{ secrets.MAIN_BOT_TOKEN }}"' >> config.toml
+          echo 'drop_pending_updates = true' >> config.toml
+          echo '' >> config.toml
+          echo '[database]' >> config.toml
+          echo 'username = "${{ secrets.MAIN_POSTGRES_USERNAME }}"' >> config.toml
+          echo 'password = "${{ secrets.MAIN_POSTGRES_PASSWORD }}"' >> config.toml
+          echo 'db = "${{ secrets.MAIN_POSTGRES_DB }}"' >> config.toml
+          echo 'host = "${{ secrets.MAIN_POSTGRES_HOST }}"' >> config.toml
+          echo 'port = ${{ secrets.MAIN_POSTGRES_PORT }}' >> config.toml
+          echo 'echo = false' >> config.toml
+          echo '' >> config.toml
+          echo '[redis]' >> config.toml
+          echo 'host = "${{ secrets.MAIN_REDIS_HOST }}"' >> config.toml
+          echo 'port = ${{ secrets.MAIN_REDIS_PORT }}' >> config.toml
+          echo 'db = ${{ secrets.MAIN_REDIS_DB }}' >> config.toml
+          echo 'password = "${{ secrets.MAIN_REDIS_PASSWORD }}"' >> config.toml
+          echo '' >> config.toml
+          echo '[s3]' >> config.toml
+          echo 'aws_host = "${{ secrets.MAIN_S3_HOST }}"' >> config.toml
+          echo 'aws_host_internal = "${{ secrets.MAIN_S3_HOST_INTERNAL }}"' >> config.toml
+          echo 'aws_host_external = "${{ secrets.MAIN_S3_HOST_EXTERNAL }}"' >> config.toml
+          echo 'aws_access_key = "${{ secrets.MAIN_MINIO_ROOT_USER }}"' >> config.toml
+          echo 'aws_secret_access_key = "${{ secrets.MAIN_MINIO_ROOT_PASSWORD }}"' >> config.toml
+          echo 'aws_bucket = "${{ secrets.MAIN_S3_BUCKET }}"' >> config.toml
+          echo '' >> config.toml
+          echo '[auth]' >> config.toml
+          echo 'jwt_private_key = """' >> config.toml
+          printf '%s' '${{ secrets.MAIN_JWT_PRIVATE_KEY_B64 }}' | base64 -d >> config.toml
+          echo '' >> config.toml
+          echo '"""' >> config.toml
+          echo 'jwt_public_key = """' >> config.toml
+          printf '%s' '${{ secrets.MAIN_JWT_PUBLIC_KEY_B64 }}' | base64 -d >> config.toml
+          echo '' >> config.toml
+          echo '"""' >> config.toml
+          echo '' >> config.toml
+          echo '[logging]' >> config.toml
+          echo 'level = "INFO"' >> config.toml
+          echo '' >> config.toml
+          echo '[dev]' >> config.toml
+          echo 'enabled = false' >> config.toml
+
           docker compose up --build -d
           EOF
 
