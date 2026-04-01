@@ -14,10 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.configs import cfg
 from src.repos import sql
-from src.utils import local_time
 from src.repos.redis import sessions_repo
 from src.schemas.dataclasses.users import UserCreateDTO, UserDTO
-
+from src.utils import local_time
 
 # ── Pure helpers ──────────────────────────────────────────────────────────────
 
@@ -85,14 +84,14 @@ class AuthService:
 			)
 			return user, True
 
-		user = await sql.users_repo.update_profile(
+		updated = await sql.users_repo.update_profile(
 			self._session,
 			telegram_id=telegram_id,
 			username=username,
 			display_name=display_name,
 			avatar_url=avatar_url,
 		)
-		return user, False
+		return updated or user, False
 
 	async def _authenticate_dev_user(self) -> tuple[UserDTO, bool]:
 		user = await sql.users_repo.get_by_telegram_id(self._session, cfg.dev.telegram_id)
