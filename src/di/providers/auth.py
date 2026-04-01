@@ -3,12 +3,12 @@ from __future__ import annotations
 import jwt
 from dishka import Provider, Scope, provide
 from fastapi import Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exc.exceptions import InvalidTokenError, UserNotFoundError
 from src.repos import sql
 from src.schemas.dataclasses.users import UserDTO
 from src.services.auth import AuthService
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AuthProvider(Provider):
