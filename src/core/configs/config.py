@@ -1,5 +1,5 @@
-from datetime import timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from pydantic_settings import (
 	BaseSettings,
@@ -13,6 +13,7 @@ from pydantic_settings import (
 from src.core.configs.app import App, Auth, Logging
 from src.core.configs.bot import Bot
 from src.core.configs.database import Database
+from src.core.configs.dev import Dev
 from src.core.configs.infrastructure import S3, Redis
 
 if __name__ == "__main__":
@@ -51,13 +52,11 @@ class Config(BaseSettings):
 	s3: S3 = S3()
 	redis: Redis = Redis()
 	logging: Logging = Logging()
+	dev: Dev = Dev()
 
 	@property
-	def tz(self) -> timezone:
-		return timezone(
-			offset=timedelta(hours=self.app.tz_offset_hours),
-			name="Europe/Moscow",
-		)
+	def tz(self) -> ZoneInfo:
+		return ZoneInfo(self.app.tz_name)
 
 	@classmethod
 	def settings_customise_sources(
