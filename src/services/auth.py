@@ -4,7 +4,7 @@ import hashlib
 import hmac
 import json
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from typing import cast
 from urllib.parse import parse_qsl
 
@@ -14,60 +14,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.configs import cfg
 from src.repos import sql
+from src.utils import local_time
 from src.repos.redis import sessions_repo
 from src.schemas.dataclasses.users import UserCreateDTO, UserDTO
 
-_VIEWER_START_BALANCE = 100
 
-
-def _validate_init_data(init_data: str) -> dict[str, str]:
-	"""
-	Валидация Telegram WebApp initData через HMAC-SHA256.
-
-	https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
-	"""
-	params = dict(parse_qsl(init_data, keep_blank_values=True))
-	received_hash = params.pop("hash", None)
-	if not received_hash:
-		raise ValueError("hash отсутствует в initData")
-
-	data_check_string = "\n".join(
-		f"{k}={v}" for k, v in sorted(params.items())
-	)
-
-	secret_key = hmac.new(
-		b"WebAppData",
-		cfg.bot.token.encode(),
-		hashlib.sha256,
-	).digest()
-	computed_hash = hmac.new(
-		secret_key,
-		data_check_string.encode(),
-		hashlib.sha256,
-	).hexdigest()
-
-	if not hmac.compare_digest(computed_hash, received_hash):
-		raise ValueError("Невалидная подпись initData")
-
-	return params
-
-
-def _parse_tg_user(params: dict[str, str]) -> dict[str, str | int | None]:
-	"""Парсим поле user из initData (JSON-строка)."""
-	raw_user = params.get("user")
-	if not raw_user:
-		raise ValueError("Поле user отсутствует в initData")
-	return json.loads(raw_user)
-
+# ── Pure helpers ──────────────────────────────────────────────────────────────
 
 def create_token(telegram_id: int) -> tuple[str, str]:
-	"""
-	Создать JWT (RS256). Возвращает (token, jti).
-
-	Подписывается приватным ключом; верифицировать можно публичным.
-	"""
+	"""Создать JWT (RS256). Возвращает (token, jti)."""
 	jti = str(uuid.uuid4())
-	now = datetime.now(UTC)
+	now = local_time.now()
 	payload = {
 		"sub": str(telegram_id),
 		"jti": jti,
@@ -83,10 +40,7 @@ def create_token(telegram_id: int) -> tuple[str, str]:
 
 
 def decode_token(token: str) -> dict[str, object]:
-	"""
-	Декодировать и верифицировать JWT публичным ключом.
-	Бросает jwt.PyJWTError при невалидном/истёкшем токене.
-	"""
+	"""Декодировать и верифицировать JWT публичным ключом."""
 	return jwt.decode(
 		token,
 		cfg.auth.jwt_public_key,
@@ -94,66 +48,117 @@ def decode_token(token: str) -> dict[str, object]:
 	)
 
 
-async def authenticate(
-	session: AsyncSession,
-	redis_client: Redis,
-	init_data: str,
-) -> tuple[UserDTO, bool]:
-	"""
-	Валидация initData → получить или создать юзера.
-	Возвращает (user_dto, is_new_user).
-	"""
-	params = _validate_init_data(init_data)
-	tg_user = _parse_tg_user(params)
+# ── Service ───────────────────────────────────────────────────────────────────
 
-	telegram_id: int = int(cast(int | str, tg_user["id"]))
-	user = await sql.users_repo.get_by_telegram_id(session, telegram_id)
+class AuthService:
+	def __init__(self, session: AsyncSession, redis: Redis) -> None:
+		self._session = session
+		self._redis = redis
 
-	if user is not None:
+	async def authenticate(self, init_data: str) -> tuple[UserDTO, bool]:
+		"""Валидация initData → получить или создать юзера.
+
+		Возвращает (user_dto, is_new_user). Бросает ValueError при невалидном initData.
+		"""
+		if cfg.dev.enabled and init_data == cfg.dev.mock_init_data:
+			return await self._authenticate_dev_user()
+
+		params = self._validate_init_data(init_data)
+		tg_user = self._parse_tg_user(params)
+
+		telegram_id: int = int(cast(int | str, tg_user["id"]))
+		username = str(tg_user["username"]) if tg_user.get("username") else None
+		display_name = str(tg_user["first_name"]) if tg_user.get("first_name") else None
+		avatar_url = str(tg_user["photo_url"]) if tg_user.get("photo_url") else None
+
+		user = await sql.users_repo.get_by_telegram_id(self._session, telegram_id)
+
+		if user is None:
+			user = await sql.users_repo.create(
+				self._session,
+				UserCreateDTO(
+					telegram_id=telegram_id,
+					username=username,
+					display_name=display_name,
+					avatar_url=avatar_url,
+				),
+			)
+			return user, True
+
+		user = await sql.users_repo.update_profile(
+			self._session,
+			telegram_id=telegram_id,
+			username=username,
+			display_name=display_name,
+			avatar_url=avatar_url,
+		)
 		return user, False
 
-	username = tg_user.get("username")
-	display_name = tg_user.get("first_name")
-	dto = UserCreateDTO(
-		telegram_id=telegram_id,
-		username=str(username) if username is not None else None,
-		display_name=str(display_name) if display_name is not None else None,
-	)
-	user = await sql.users_repo.create(session, dto)
-	return user, True
+	async def _authenticate_dev_user(self) -> tuple[UserDTO, bool]:
+		user = await sql.users_repo.get_by_telegram_id(self._session, cfg.dev.telegram_id)
+		if user is not None:
+			return user, False
+		user = await sql.users_repo.create(
+			self._session,
+			UserCreateDTO(
+				telegram_id=cfg.dev.telegram_id,
+				username=cfg.dev.username,
+				display_name=cfg.dev.display_name,
+			),
+		)
+		return user, True
 
+	async def create_session(self, telegram_id: int) -> tuple[str, str]:
+		"""Создать JWT + записать JTI в Redis. Возвращает (token, jti)."""
+		token, jti = create_token(telegram_id)
+		await sessions_repo.save(
+			self._redis,
+			jti,
+			telegram_id,
+			cfg.auth.jwt_expire_seconds,
+		)
+		return token, jti
 
-async def create_session(
-	redis_client: Redis,
-	telegram_id: int,
-) -> tuple[str, str]:
-	"""
-	Создать JWT + записать JTI в Redis.
-	Возвращает (token, jti).
-	"""
-	token, jti = create_token(telegram_id)
-	await sessions_repo.save(
-		redis_client,
-		jti,
-		telegram_id,
-		cfg.auth.jwt_expire_seconds,
-	)
-	return token, jti
+	async def verify_session(self, token: str) -> int:
+		"""Проверить JWT + наличие сессии в Redis. Возвращает telegram_id."""
+		payload = decode_token(token)
+		jti = cast(str, payload["jti"])
 
+		telegram_id = await sessions_repo.get_telegram_id(self._redis, jti)
+		if telegram_id is None:
+			raise ValueError("Сессия не найдена или истекла")
 
-async def verify_session(
-	redis_client: Redis,
-	token: str,
-) -> int:
-	"""
-	Проверить JWT + наличие сессии в Redis.
-	Возвращает telegram_id или бросает исключение.
-	"""
-	payload = decode_token(token)
-	jti = cast(str, payload["jti"])
+		return telegram_id
 
-	telegram_id = await sessions_repo.get_telegram_id(redis_client, jti)
-	if telegram_id is None:
-		raise ValueError("Сессия не найдена или истекла")
+	@staticmethod
+	def _validate_init_data(init_data: str) -> dict[str, str]:
+		params = dict(parse_qsl(init_data, keep_blank_values=True))
+		received_hash = params.pop("hash", None)
+		if not received_hash:
+			raise ValueError("hash отсутствует в initData")
 
-	return telegram_id
+		data_check_string = "\n".join(
+			f"{k}={v}" for k, v in sorted(params.items())
+		)
+		secret_key = hmac.new(
+			b"WebAppData",
+			cfg.bot.token.encode(),
+			hashlib.sha256,
+		).digest()
+		computed_hash = hmac.new(
+			secret_key,
+			data_check_string.encode(),
+			hashlib.sha256,
+		).hexdigest()
+
+		if not hmac.compare_digest(computed_hash, received_hash):
+			raise ValueError("Невалидная подпись initData")
+
+		return params
+
+	@staticmethod
+	def _parse_tg_user(params: dict[str, str]) -> dict[str, str | int | None]:
+		raw_user = params.get("user")
+		if not raw_user:
+			raise ValueError("Поле user отсутствует в initData")
+		return json.loads(raw_user)
