@@ -6,22 +6,26 @@ from src.schemas.dataclasses.users import UserDTO
 from src.schemas.enums.balance import BalanceTransactionType
 
 
-async def topup(session: AsyncSession, user: UserDTO, amount: int) -> tuple[int, int]:
-	"""Пополняет баланс пользователя и записывает транзакцию.
+class BalanceService:
+	def __init__(self, session: AsyncSession) -> None:
+		self._session = session
 
-	Возвращает (previous_balance, new_balance).
-	"""
-	previous_balance = user.balance
-	new_balance = previous_balance + amount
+	async def topup(self, user: UserDTO, amount: int) -> tuple[int, int]:
+		"""Пополняет баланс пользователя и записывает транзакцию.
 
-	await sql.users_repo.update_balance(session, user.telegram_id, new_balance)
-	await sql.balance_transactions_repo.create(
-		session,
-		BalanceTransactionCreateDTO(
-			user_id=user.telegram_id,
-			amount=amount,
-			type=BalanceTransactionType.TOPUP,
-		),
-	)
+		Возвращает (previous_balance, new_balance).
+		"""
+		previous_balance = user.balance
+		new_balance = previous_balance + amount
 
-	return previous_balance, new_balance
+		await sql.users_repo.update_balance(self._session, user.telegram_id, new_balance)
+		await sql.balance_transactions_repo.create(
+			self._session,
+			BalanceTransactionCreateDTO(
+				user_id=user.telegram_id,
+				amount=amount,
+				type=BalanceTransactionType.TOPUP,
+			),
+		)
+
+		return previous_balance, new_balance
