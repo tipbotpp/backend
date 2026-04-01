@@ -1,9 +1,10 @@
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.models.base import Base
+from src.utils import local_time
 
 
 class Donations(Base):
@@ -70,7 +71,7 @@ class Donations(Base):
 	created_at: Mapped[datetime] = mapped_column(
 		DateTime(timezone=True),
 		nullable=False,
-		default=lambda: datetime.now(UTC),
+		default=local_time.now,
 		server_default=func.now(),
 		comment="Дата и время создания доната",
 	)
