@@ -26,11 +26,15 @@ class StartKeyboards:
 
 	def viewer_menu(self) -> InlineKeyboardMarkup:
 		ib = InlineKeyboardBuilder()
-		ib.button(
-			text="🚀 Открыть TipBot",
-			web_app=WebAppInfo(url=cfg.app.mini_app_url),
-		)
-		return cast(InlineKeyboardMarkup, ib.adjust(1).as_markup())
+		ib.button(text="🎯 Сделать донат", callback_data="donate:start")
+		ib.button(text="💳 Пополнить баланс", callback_data="topup:menu")
+		if cfg.app.mini_app_url.startswith("https://"):
+			ib.button(
+				text="📱 Открыть Mini App",
+				web_app=WebAppInfo(url=cfg.app.mini_app_url),
+			)
+			return cast(InlineKeyboardMarkup, ib.adjust(2, 1).as_markup())
+		return cast(InlineKeyboardMarkup, ib.adjust(2).as_markup())
 
 	def streamer_menu(self) -> InlineKeyboardMarkup:
 		ib = InlineKeyboardBuilder()
