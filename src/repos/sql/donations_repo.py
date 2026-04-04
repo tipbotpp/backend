@@ -57,7 +57,7 @@ async def get_history(
 		condition = or_(Donations.from_user_id == user_id, Donations.to_streamer_id == user_id)
 
 	total_result = await session.execute(
-		select(func.count()).select_from(Donations).where(condition)
+		select(func.count()).select_from(Donations).where(condition),
 	)
 	total = total_result.scalar_one()
 
@@ -68,7 +68,7 @@ async def get_history(
 		.where(condition)
 		.order_by(Donations.created_at.desc())
 		.offset(offset)
-		.limit(limit)
+		.limit(limit),
 	)
 
 	items = [
@@ -92,7 +92,7 @@ async def get_session_stats(session: AsyncSession, session_id: int) -> SessionSt
 		select(
 			func.coalesce(func.sum(Donations.amount), 0).label("total"),
 			func.count(Donations.id).label("cnt"),
-		).where(Donations.session_id == session_id)
+		).where(Donations.session_id == session_id),
 	)
 	agg_row = agg.one()
 
@@ -103,7 +103,7 @@ async def get_session_stats(session: AsyncSession, session_id: int) -> SessionSt
 		.where(Donations.session_id == session_id)
 		.group_by(FromUser.telegram_id, FromUser.username)
 		.order_by(func.sum(Donations.amount).desc())
-		.limit(1)
+		.limit(1),
 	)
 	top = top_row.one_or_none()
 	top_donator = TopDonatorDTO(username=top.username, total_amount=top.total) if top else None
@@ -111,7 +111,7 @@ async def get_session_stats(session: AsyncSession, session_id: int) -> SessionSt
 	timeline_rows = await session.execute(
 		select(Donations.created_at, Donations.amount)
 		.where(Donations.session_id == session_id)
-		.order_by(Donations.created_at)
+		.order_by(Donations.created_at),
 	)
 	buckets: dict[str, int] = defaultdict(int)
 	for ts, amount in timeline_rows.all():

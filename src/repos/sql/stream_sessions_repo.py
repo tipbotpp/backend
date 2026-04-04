@@ -36,7 +36,7 @@ async def get_active_by_streamer_id(session: AsyncSession, streamer_id: int) -> 
 		select(StreamSessions).where(
 			StreamSessions.streamer_id == streamer_id,
 			StreamSessions.is_active.is_(True),
-		)
+		),
 	)
 	instance = result.scalar_one_or_none()
 	if instance is None:

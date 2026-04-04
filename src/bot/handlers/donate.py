@@ -7,7 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.bot.keyboards.donate import DonateKeyboards
 from src.bot.states.donate import DonateStates
 from src.bot.texts.donate import DonateText
-from src.core.exc.exceptions import InsufficientBalanceError, StreamNotActiveError, UserNotFoundError
+from src.core.exc.exceptions import (
+	InsufficientBalanceError,
+	StreamNotActiveError,
+	UserNotFoundError,
+)
 from src.models.users import Users
 from src.repos import sql
 from src.schemas.dataclasses.users import UserDTO
