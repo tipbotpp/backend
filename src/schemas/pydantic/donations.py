@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from pydantic import Field
+
 from src.schemas.pydantic.common import (
 	BaseSchema,
 	Paginated,
@@ -11,7 +13,7 @@ from src.schemas.pydantic.common import (
 
 class DonationBody(BaseSchema):
 	streamer_id: int
-	amount: int
+	amount: int = Field(gt=0, description="Сумма доната в монетах")
 	message: str | None = None
 
 
