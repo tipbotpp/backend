@@ -30,6 +30,16 @@ async def get_by_telegram_id(
 	return map_model(instance, UserDTO)
 
 
+async def get_by_username(session: AsyncSession, username: str) -> UserDTO | None:
+	result = await session.execute(
+		select(Users).where(Users.username.ilike(username)),
+	)
+	instance = result.scalar_one_or_none()
+	if instance is None:
+		return None
+	return map_model(instance, UserDTO)
+
+
 async def get_by_ids(session: AsyncSession, ids: list[int]) -> list[UserDTO]:
 	result = await session.execute(
 		select(Users).where(Users.telegram_id.in_(ids)),
