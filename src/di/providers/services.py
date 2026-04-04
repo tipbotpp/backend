@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.services.auth import AuthService
 from src.services.balance import BalanceService
+from src.services.donations import DonationService
 
 
 class ServiceProvider(Provider):
@@ -16,3 +17,7 @@ class ServiceProvider(Provider):
 	@provide
 	def get_balance_service(self, session: AsyncSession) -> BalanceService:
 		return BalanceService(session)
+
+	@provide
+	def get_donation_service(self, session: AsyncSession) -> DonationService:
+		return DonationService(session)
