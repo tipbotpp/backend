@@ -3,9 +3,9 @@ from typing import Any, cast
 
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI
-from prometheus_fastapi_instrumentator import Instrumentator
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from src.api import router
 from src.core.configs import cfg
