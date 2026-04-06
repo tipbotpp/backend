@@ -3,6 +3,7 @@ from typing import Any, cast
 
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
@@ -32,6 +33,9 @@ app.add_middleware(
 	allow_origins=cfg.app.allow_origins,
 )
 app.add_middleware(cast(Any, GZipMiddleware))
+
+# ========== Metrics ==========
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 # ========== DI ==========
 container = get_container()
