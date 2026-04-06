@@ -11,6 +11,7 @@ class UserDTO:
 	display_name: str | None
 	description: str | None
 	avatar_url: str | None
+	display_name_custom: bool
 	role: str | None
 	balance: int
 	created_at: datetime
