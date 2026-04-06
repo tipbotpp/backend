@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, String, Text
+from sqlalchemy import BigInteger, Boolean, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.models.base import Base
@@ -43,6 +43,13 @@ class Users(Base, TimestampMixin):
 		nullable=True,
 		default=None,
 		comment="Роль пользователя: streamer | viewer | null",
+	)
+	display_name_custom: Mapped[bool] = mapped_column(
+		Boolean,
+		nullable=False,
+		default=False,
+		server_default="false",
+		comment="True если пользователь явно задал display_name через API",
 	)
 	balance: Mapped[int] = mapped_column(
 		BigInteger,
