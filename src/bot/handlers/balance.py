@@ -1,4 +1,5 @@
 from aiogram import F, Router
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from dishka.integrations.aiogram import FromDishka, inject
@@ -13,6 +14,14 @@ router = Router(name="balance_router")
 kb = BalanceKeyboards()
 
 
+@router.message(Command("balance"))
+async def cmd_balance(message: Message, user: Users) -> None:
+	await message.answer(
+		BalanceText.balance_info(user.balance),
+		reply_markup=kb.balance_info_menu(),
+	)
+
+
 @router.callback_query(F.data == "topup:menu")
 async def cb_topup_menu(callback: CallbackQuery, user: Users) -> None:
 	await callback.answer()
@@ -22,7 +31,6 @@ async def cb_topup_menu(callback: CallbackQuery, user: Users) -> None:
 	await msg.answer(
 		BalanceText.topup_menu(user.balance),
 		reply_markup=kb.topup_menu(user.balance),
-		parse_mode="HTML",
 	)
 
 
@@ -46,7 +54,7 @@ async def cb_topup_amount(
 	_, new_balance = await balance_service.topup(user_dto, callback_data.amount)
 	await msg.answer(
 		BalanceText.topup_success(callback_data.amount, new_balance),
-		parse_mode="HTML",
+		reply_markup=kb.after_topup_menu(),
 	)
 
 
@@ -60,7 +68,6 @@ async def cb_topup_custom(callback: CallbackQuery, state: FSMContext) -> None:
 	await msg.answer(
 		BalanceText.topup_ask_amount(),
 		reply_markup=kb.cancel(),
-		parse_mode="HTML",
 	)
 
 
@@ -74,7 +81,7 @@ async def fsm_topup_amount(
 ) -> None:
 	text = (message.text or "").strip()
 	if not text.isdigit() or int(text) <= 0:
-		await message.answer(BalanceText.topup_invalid_amount(), parse_mode="HTML")
+		await message.answer(BalanceText.topup_invalid_amount())
 		return
 
 	amount = int(text)
@@ -87,7 +94,7 @@ async def fsm_topup_amount(
 	_, new_balance = await balance_service.topup(user_dto, amount)
 	await message.answer(
 		BalanceText.topup_success(amount, new_balance),
-		parse_mode="HTML",
+		reply_markup=kb.after_topup_menu(),
 	)
 
 
@@ -98,4 +105,4 @@ async def cb_cancel(callback: CallbackQuery, state: FSMContext) -> None:
 	msg = callback.message
 	if not isinstance(msg, Message):
 		return
-	await msg.answer(BalanceText.cancelled(), parse_mode="HTML")
+	await msg.answer(BalanceText.cancelled())
