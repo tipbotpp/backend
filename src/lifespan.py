@@ -5,6 +5,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from dishka import AsyncContainer
 from dishka.integrations.aiogram import setup_dishka as setup_dishka_aiogram
 from fastapi import FastAPI
@@ -57,7 +59,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 		await _ensure_dev_user(session_factory)
 
 	# ========== Bot ==========
-	bot = Bot(token=cfg.bot.token)
+	bot = Bot(token=cfg.bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 	dp = Dispatcher()
 
 	dp.update.outer_middleware(LoggingMiddleware())
