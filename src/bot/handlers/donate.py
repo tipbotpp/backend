@@ -32,7 +32,6 @@ async def cb_donate_start(callback: CallbackQuery, state: FSMContext) -> None:
 	await msg.answer(
 		DonateText.ask_streamer(),
 		reply_markup=kb.cancel(),
-		parse_mode="HTML",
 	)
 
 
@@ -52,7 +51,7 @@ async def fsm_streamer_id(
 		streamer = await sql.users_repo.get_by_username(session, text)
 
 	if streamer is None or streamer.role != "streamer":
-		await message.answer(DonateText.streamer_not_found(), reply_markup=kb.cancel(), parse_mode="HTML")
+		await message.answer(DonateText.streamer_not_found(), reply_markup=kb.cancel())
 		return
 
 	active_session = await sql.stream_sessions_repo.get_active_by_streamer_id(session, streamer.telegram_id)
@@ -61,7 +60,6 @@ async def fsm_streamer_id(
 		await message.answer(
 			DonateText.streamer_no_active_stream(streamer_name),
 			reply_markup=kb.cancel(),
-			parse_mode="HTML",
 		)
 		return
 
@@ -71,7 +69,6 @@ async def fsm_streamer_id(
 	await message.answer(
 		DonateText.ask_amount(streamer_name, user.balance),
 		reply_markup=kb.cancel(),
-		parse_mode="HTML",
 	)
 
 
@@ -79,7 +76,7 @@ async def fsm_streamer_id(
 async def fsm_donate_amount(message: Message, state: FSMContext, user: Users) -> None:
 	text = (message.text or "").strip()
 	if not text.isdigit() or int(text) <= 0:
-		await message.answer(DonateText.invalid_amount(), parse_mode="HTML")
+		await message.answer(DonateText.invalid_amount())
 		return
 
 	amount = int(text)
@@ -87,7 +84,6 @@ async def fsm_donate_amount(message: Message, state: FSMContext, user: Users) ->
 		await message.answer(
 			DonateText.not_enough_balance(amount, user.balance),
 			reply_markup=kb.cancel(),
-			parse_mode="HTML",
 		)
 		return
 
@@ -96,7 +92,6 @@ async def fsm_donate_amount(message: Message, state: FSMContext, user: Users) ->
 	await message.answer(
 		DonateText.ask_message(),
 		reply_markup=kb.skip_message(),
-		parse_mode="HTML",
 	)
 
 
@@ -150,23 +145,16 @@ async def _send_donation(
 			message=message_text,
 		)
 	except InsufficientBalanceError:
-		await message.answer(
-			DonateText.not_enough_balance(amount, user.balance),
-			parse_mode="HTML",
-		)
+		await message.answer(DonateText.not_enough_balance(amount, user.balance))
 		return
 	except (UserNotFoundError, StreamNotActiveError):
-		await message.answer(
-			DonateText.streamer_no_active_stream(streamer_name),
-			parse_mode="HTML",
-		)
+		await message.answer(DonateText.streamer_no_active_stream(streamer_name))
 		return
 
-	await message.answer(DonateText.success(streamer_name), parse_mode="HTML")
+	await message.answer(DonateText.success(streamer_name))
 
 	if message.bot:
 		await message.bot.send_message(
 			chat_id=streamer_id,
 			text=DonateText.notification_to_streamer(donor_name, amount, message_text),
-			parse_mode="HTML",
 		)
