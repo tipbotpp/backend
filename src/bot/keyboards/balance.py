@@ -21,6 +21,18 @@ class BalanceKeyboards:
 		ib.button(text="❌ Отмена", callback_data="cancel")
 		return cast(InlineKeyboardMarkup, ib.adjust(3, 1, 1).as_markup())
 
+	def after_topup_menu(self) -> InlineKeyboardMarkup:
+		ib = InlineKeyboardBuilder()
+		ib.button(text="🎯 Сделать донат", callback_data="donate:start")
+		ib.button(text="💳 Пополнить ещё", callback_data="topup:menu")
+		return cast(InlineKeyboardMarkup, ib.adjust(2).as_markup())
+
+	def balance_info_menu(self) -> InlineKeyboardMarkup:
+		ib = InlineKeyboardBuilder()
+		ib.button(text="🎯 Сделать донат", callback_data="donate:start")
+		ib.button(text="💳 Пополнить баланс", callback_data="topup:menu")
+		return cast(InlineKeyboardMarkup, ib.adjust(2).as_markup())
+
 	def cancel(self) -> InlineKeyboardMarkup:
 		ib = InlineKeyboardBuilder()
 		ib.button(text="❌ Отмена", callback_data="cancel")
