@@ -27,19 +27,16 @@ async def cmd_start(message: Message, user: Users) -> None:
 		await message.answer(
 			StartText.welcome_new(name),
 			reply_markup=kb.role_selection(),
-			parse_mode="HTML",
 		)
 	elif user.role == UserRole.VIEWER:
 		await message.answer(
 			StartText.welcome_viewer(name),
 			reply_markup=kb.viewer_menu(),
-			parse_mode="HTML",
 		)
 	else:
 		await message.answer(
 			StartText.welcome_streamer(name),
 			reply_markup=kb.streamer_menu(),
-			parse_mode="HTML",
 		)
 
 
@@ -82,11 +79,9 @@ async def cb_select_role(
 		await msg.edit_text(
 			StartText.role_set_viewer(),
 			reply_markup=StartKeyboards().viewer_menu(),
-			parse_mode="HTML",
 		)
 	else:
 		await msg.edit_text(
 			StartText.role_set_streamer(),
 			reply_markup=StartKeyboards().streamer_menu(),
-			parse_mode="HTML",
 		)
