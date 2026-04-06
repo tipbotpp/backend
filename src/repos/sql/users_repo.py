@@ -97,6 +97,30 @@ async def update_profile(
 	return map_model(instance, UserDTO)
 
 
+async def update_profile_custom(
+	session: AsyncSession,
+	telegram_id: int,
+	display_name: str | None = None,
+	description: str | None = None,
+) -> UserDTO | None:
+	"""Обновление профиля пользователем через API. Если передан display_name — выставляет флаг display_name_custom=True."""
+	instance = await session.get(Users, telegram_id)
+	if instance is None:
+		return None
+	changed = False
+	if display_name is not None and instance.display_name != display_name:
+		instance.display_name = display_name
+		instance.display_name_custom = True
+		changed = True
+	if description is not None and instance.description != description:
+		instance.description = description
+		changed = True
+	if changed:
+		await session.flush()
+		await session.refresh(instance)
+	return map_model(instance, UserDTO)
+
+
 async def update_balance(session: AsyncSession, telegram_id: int, new_balance: int) -> UserDTO | None:
 	instance = await session.get(Users, telegram_id)
 	if instance is None:
