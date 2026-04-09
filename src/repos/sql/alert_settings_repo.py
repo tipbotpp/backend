@@ -11,6 +11,14 @@ from src.schemas.dataclasses.settings import (
 from src.utils.mappers import map_model
 
 
+async def get_by_streamer_id(session: AsyncSession, streamer_id: int) -> AlertSettingsDTO | None:
+	result = await session.execute(select(AlertSettings).where(AlertSettings.streamer_id == streamer_id))
+	instance = result.scalar_one_or_none()
+	if instance is None:
+		return None
+	return map_model(instance, AlertSettingsDTO)
+
+
 async def get_by_id(session: AsyncSession, id: int) -> AlertSettingsDTO | None:
 	instance = await session.get(AlertSettings, id)
 	if instance is None:
