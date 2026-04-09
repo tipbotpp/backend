@@ -3,7 +3,6 @@ from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.core.storages import S3Manager
 from src.services.auth import AuthService
 from src.services.balance import BalanceService
 from src.services.donations import DonationService
@@ -31,6 +30,5 @@ class ServiceProvider(Provider):
 		session: AsyncSession,
 		session_factory: async_sessionmaker[AsyncSession],
 		ml_service: MLService,
-		s3: S3Manager,
 	) -> DonationService:
-		return DonationService(session, session_factory, ml_service, s3)
+		return DonationService(session, session_factory, ml_service)
