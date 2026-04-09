@@ -1,6 +1,8 @@
 import httpx
 
 from src.schemas.dataclasses.ml import (
+	ImageRequestDTO,
+	ImageResultDTO,
 	ModerationRequestDTO,
 	ModerationResultDTO,
 	TTSRequestDTO,
@@ -66,3 +68,16 @@ async def synthesize_tts(client: httpx.AsyncClient, dto: TTSRequestDTO) -> TTSRe
 	)
 	log.debug("gateway.synthesize_tts response", audio_key=result.audio_key, status_code=response.status_code)
 	return result
+
+
+# TODO: реализовать когда ml-сервис поддержит POST /image/generate
+async def generate_image(client: httpx.AsyncClient, dto: ImageRequestDTO) -> ImageResultDTO:
+	"""Заглушка — ML-сервис пока не реализует /image/generate."""
+	log = logger.bind(
+		request_donation_id=dto.donation_id,
+		request_donor_name=dto.donor_name,
+		request_amount=dto.amount,
+		request_text_length=len(dto.text),
+	)
+	log.debug("gateway.generate_image stub — skipped")
+	raise NotImplementedError("image generation not yet implemented in ml-service")
