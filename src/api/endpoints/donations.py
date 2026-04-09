@@ -1,9 +1,12 @@
+import asyncio
 from typing import Annotated
 
 from dishka.integrations.fastapi import DishkaRoute, FromDishka, inject
 from fastapi import APIRouter, Depends
 
+from src.core.storages import S3Manager
 from src.di.deps.auth import CurrentUserDep
+from src.repos.s3 import media_repo
 from src.schemas.pydantic import donations as donations_schema
 from src.services.donations import DonationService
 
@@ -61,6 +64,7 @@ async def get_session_stats(
 async def get_history(
 	filters: Annotated[donations_schema.DonationHistoryFilters, Depends()],
 	donation_service: FromDishka[DonationService],
+	s3: FromDishka[S3Manager],
 	user: CurrentUserDep,
 ) -> donations_schema.DonationHistoryResponse:
 	items, total = await donation_service.get_history(
@@ -69,6 +73,12 @@ async def get_history(
 		limit=filters.limit,
 		offset=filters.offset,
 	)
+
+	audio_urls, image_urls = await asyncio.gather(
+		asyncio.gather(*[media_repo.resolve_presigned_url(s3, item.audio_key) for item in items]),
+		asyncio.gather(*[media_repo.resolve_presigned_url(s3, item.image_key) for item in items]),
+	)
+
 	return donations_schema.DonationHistoryResponse(
 		items=[
 			donations_schema.DonationHistoryItemResponse(
@@ -76,11 +86,13 @@ async def get_history(
 				amount=item.amount,
 				message=item.message,
 				status=item.status,
+				audio_url=audio_url,
+				image_url=image_url,
 				from_user=donations_schema.DonorResponse(id=item.from_user.id, username=item.from_user.username),
 				to_streamer=donations_schema.DonorResponse(id=item.to_streamer.id, username=item.to_streamer.username),
 				created_at=item.created_at,
 			)
-			for item in items
+			for item, audio_url, image_url in zip(items, audio_urls, image_urls)
 		],
 		total=total,
 		limit=filters.limit,
