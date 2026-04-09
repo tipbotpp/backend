@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import (
 from src.core.cache import create_redis_client, create_redis_pool
 from src.core.configs import cfg
 from src.core.db import create_engine, create_session_factory
-from src.core.storages import get_s3_client, get_s3_external_client
+from src.core.storages import S3Manager
 from src.services.logger import AbstractLogger, get_logger
 
 
@@ -51,6 +51,12 @@ class CoreProvider(Provider):
 		"""Логгер на всё приложение."""
 		return get_logger()
 
+	# ========== S3 ==========
+	@provide
+	def get_s3_manager(self) -> S3Manager:
+		"""S3Manager живёт на всё приложение."""
+		return S3Manager()
+
 	# ========== ML Service HTTP Client ==========
 	@provide
 	async def get_ml_client(self) -> AsyncIterator[httpx.AsyncClient]:
@@ -63,17 +69,3 @@ class CoreProvider(Provider):
 			yield client
 
 
-class RequestProvider(Provider):
-	scope = Scope.REQUEST
-
-	@provide
-	async def get_s3_client(self) -> AsyncIterator[Any]:
-		"""Provide S3 клиента на время запроса."""
-		async with get_s3_client() as client:
-			yield client  # Dishka автоматически закроет после REQUEST
-
-	@provide
-	async def get_s3_external_client(self) -> AsyncIterator[Any]:
-		"""Provide S3 клиента на время запроса."""
-		async with get_s3_external_client() as client:
-			yield client  # Dishka автоматически закроет после REQUEST
