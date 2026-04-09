@@ -105,7 +105,7 @@ jobs:
           echo 'display_name = "${{ secrets.DEV_MODE_DISPLAY_NAME }}"' >> config.toml
           echo 'mock_init_data = "${{ secrets.DEV_MODE_MOCK_INIT_DATA }}"' >> config.toml
 
-          docker compose -f ${{ secrets.DEV_INFRA_DIR }}/docker-compose.yaml up --build -d backend
+          docker compose -f ${{ secrets.DEV_INFRA_DIR }}/docker-compose.yaml up --build -d backend worker
           EOF
 
       - name: Notify Success
