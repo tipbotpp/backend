@@ -33,6 +33,8 @@ class DonationHistoryItemResponse(BaseSchema):
 	amount: int
 	message: str | None
 	status: str
+	audio_url: str | None
+	image_url: str | None
 	from_user: DonorResponse
 	to_streamer: DonorResponse
 	created_at: datetime
