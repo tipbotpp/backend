@@ -90,3 +90,13 @@ class InsufficientBalanceError(BaseHTTPException):
 class DonationNotFoundError(BaseHTTPException):
 	status_code = status.HTTP_404_NOT_FOUND
 	detail = "Донат не найден"
+
+
+class DonationRejectedToxicityError(BaseHTTPException):
+	status_code = 451
+	detail = "Сообщение отклонено модерацией"
+
+
+class DonationRejectedStopwordError(BaseHTTPException):
+	status_code = 451
+	detail = "Сообщение содержит запрещённое слово стримера"
