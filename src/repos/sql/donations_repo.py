@@ -128,6 +128,25 @@ async def get_session_stats(session: AsyncSession, session_id: int) -> SessionSt
 	)
 
 
+async def update_ml_artifacts(
+	session: AsyncSession,
+	id: int,
+	audio_url: str | None = None,
+	image_url: str | None = None,
+	status: str | None = None,
+) -> None:
+	instance = await session.get(Donations, id)
+	if instance is None:
+		return
+	if audio_url is not None:
+		instance.audio_url = audio_url
+	if image_url is not None:
+		instance.image_url = image_url
+	if status is not None:
+		instance.status = status
+	await session.flush()
+
+
 async def delete(session: AsyncSession, id: int) -> None:
 	instance = await session.get(Donations, id)
 	if instance is not None:
