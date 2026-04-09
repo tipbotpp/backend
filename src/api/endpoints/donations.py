@@ -9,8 +9,11 @@ from src.di.deps.auth import CurrentUserDep
 from src.repos.s3 import media_repo
 from src.schemas.pydantic import donations as donations_schema
 from src.services.donations import DonationService
+from src.services.logger import get_logger
 
 router = APIRouter(prefix="/donations", route_class=DishkaRoute)
+
+logger = get_logger().bind(layer="endpoint", module="donations")
 
 
 @router.post("", response_model=donations_schema.DonationCreateResponse, status_code=201)
@@ -20,12 +23,20 @@ async def send_donation(
 	donation_service: FromDishka[DonationService],
 	user: CurrentUserDep,
 ) -> donations_schema.DonationCreateResponse:
+	log = logger.bind(
+		request_user_id=user.telegram_id,
+		request_streamer_id=body.streamer_id,
+		request_amount=body.amount,
+		request_message_length=len(body.message) if body.message else 0,
+	)
+	log.debug("POST /donations")
 	donation = await donation_service.send(
 		user=user,
 		streamer_id=body.streamer_id,
 		amount=body.amount,
 		message=body.message,
 	)
+	log.info("donation accepted", donation_id=donation.id, status=donation.status)
 	return donations_schema.DonationCreateResponse(
 		donation_id=donation.id,
 		status=donation.status,
@@ -39,7 +50,10 @@ async def get_session_stats(
 	donation_service: FromDishka[DonationService],
 	user: CurrentUserDep,
 ) -> donations_schema.SessionStatsResponse:
+	log = logger.bind(request_user_id=user.telegram_id)
+	log.debug("GET /donations/session")
 	stats = await donation_service.get_session_stats(user)
+	log.debug("session stats retrieved", session_id=stats.session_id, donations_count=stats.donations_count)
 	return donations_schema.SessionStatsResponse(
 		session_id=stats.session_id,
 		total_collected=stats.total_collected,
@@ -67,6 +81,13 @@ async def get_history(
 	s3: FromDishka[S3Manager],
 	user: CurrentUserDep,
 ) -> donations_schema.DonationHistoryResponse:
+	log = logger.bind(
+		request_user_id=user.telegram_id,
+		request_type_filter=filters.type,
+		request_limit=filters.limit,
+		request_offset=filters.offset,
+	)
+	log.debug("GET /donations/history")
 	items, total = await donation_service.get_history(
 		user=user,
 		type_filter=filters.type,
@@ -79,6 +100,7 @@ async def get_history(
 		asyncio.gather(*[media_repo.resolve_presigned_url(s3, item.image_key) for item in items]),
 	)
 
+	log.debug("history retrieved", total=total, items_count=len(items))
 	return donations_schema.DonationHistoryResponse(
 		items=[
 			donations_schema.DonationHistoryItemResponse(

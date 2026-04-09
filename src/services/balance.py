@@ -4,6 +4,9 @@ from src.repos import sql
 from src.schemas.dataclasses.balance import BalanceTransactionCreateDTO
 from src.schemas.dataclasses.users import UserDTO
 from src.schemas.enums.balance import BalanceTransactionType
+from src.services.logger import get_logger
+
+logger = get_logger().bind(layer="service", module="balance")
 
 
 class BalanceService:
@@ -11,10 +14,9 @@ class BalanceService:
 		self._session = session
 
 	async def topup(self, user: UserDTO, amount: int) -> tuple[int, int]:
-		"""Пополняет баланс пользователя и записывает транзакцию.
+		log = logger.bind(request_user_id=user.telegram_id, request_amount=amount)
+		log.info("balance.topup started", previous_balance=user.balance)
 
-		Возвращает (previous_balance, new_balance).
-		"""
 		previous_balance = user.balance
 		new_balance = previous_balance + amount
 
@@ -28,4 +30,5 @@ class BalanceService:
 			),
 		)
 
+		log.info("balance.topup done", new_balance=new_balance)
 		return previous_balance, new_balance

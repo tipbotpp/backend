@@ -16,7 +16,10 @@ from src.core.configs import cfg
 from src.repos import sql
 from src.repos.redis import sessions_repo
 from src.schemas.dataclasses.users import UserCreateDTO, UserDTO
+from src.services.logger import get_logger
 from src.utils import local_time
+
+logger = get_logger().bind(layer="service", module="auth")
 
 # ── Pure helpers ──────────────────────────────────────────────────────────────
 
@@ -55,20 +58,26 @@ class AuthService:
 		self._redis = redis
 
 	async def authenticate(self, init_data: str) -> tuple[UserDTO, bool]:
-		"""Валидация initData → получить или создать юзера.
+		log = logger.bind(dev_mode=cfg.dev.enabled)
+		log.debug("auth.authenticate started")
 
-		Возвращает (user_dto, is_new_user). Бросает ValueError при невалидном initData.
-		"""
 		if cfg.dev.enabled and init_data == cfg.dev.mock_init_data:
+			log.debug("auth.authenticate via dev mock")
 			return await self._authenticate_dev_user()
 
-		params = self._validate_init_data(init_data)
-		tg_user = self._parse_tg_user(params)
+		try:
+			params = self._validate_init_data(init_data)
+		except ValueError as e:
+			log.error("auth.authenticate invalid init_data", reason=str(e))
+			raise
 
+		tg_user = self._parse_tg_user(params)
 		telegram_id: int = int(cast(int | str, tg_user["id"]))
 		username = str(tg_user["username"]) if tg_user.get("username") else None
 		display_name = str(tg_user["first_name"]) if tg_user.get("first_name") else None
 		avatar_url = str(tg_user["photo_url"]) if tg_user.get("photo_url") else None
+
+		log = log.bind(telegram_id=telegram_id, username=username)
 
 		user = await sql.users_repo.get_by_telegram_id(self._session, telegram_id)
 
@@ -82,6 +91,7 @@ class AuthService:
 					avatar_url=avatar_url,
 				),
 			)
+			log.info("auth.authenticate new user created")
 			return user, True
 
 		updated = await sql.users_repo.update_profile(
@@ -91,11 +101,14 @@ class AuthService:
 			display_name=display_name,
 			avatar_url=avatar_url,
 		)
+		log.debug("auth.authenticate existing user")
 		return updated or user, False
 
 	async def _authenticate_dev_user(self) -> tuple[UserDTO, bool]:
+		log = logger.bind(telegram_id=cfg.dev.telegram_id, username=cfg.dev.username)
 		user = await sql.users_repo.get_by_telegram_id(self._session, cfg.dev.telegram_id)
 		if user is not None:
+			log.debug("auth.dev user found")
 			return user, False
 		user = await sql.users_repo.create(
 			self._session,
@@ -105,10 +118,12 @@ class AuthService:
 				display_name=cfg.dev.display_name,
 			),
 		)
+		log.info("auth.dev user created")
 		return user, True
 
 	async def create_session(self, telegram_id: int) -> tuple[str, str]:
-		"""Создать JWT + записать JTI в Redis. Возвращает (token, jti)."""
+		log = logger.bind(telegram_id=telegram_id)
+		log.debug("auth.create_session started")
 		token, jti = create_token(telegram_id)
 		await sessions_repo.save(
 			self._redis,
@@ -116,17 +131,21 @@ class AuthService:
 			telegram_id,
 			cfg.auth.jwt_expire_seconds,
 		)
+		log.info("auth.create_session done", jti=jti)
 		return token, jti
 
 	async def verify_session(self, token: str) -> int:
-		"""Проверить JWT + наличие сессии в Redis. Возвращает telegram_id."""
+		log = logger.bind()
+		log.debug("auth.verify_session started")
 		payload = decode_token(token)
 		jti = cast(str, payload["jti"])
 
 		telegram_id = await sessions_repo.get_telegram_id(self._redis, jti)
 		if telegram_id is None:
+			log.error("auth.verify_session session not found", jti=jti)
 			raise ValueError("Сессия не найдена или истекла")
 
+		log.debug("auth.verify_session ok", telegram_id=telegram_id)
 		return telegram_id
 
 	@staticmethod

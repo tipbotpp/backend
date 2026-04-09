@@ -9,18 +9,21 @@ from src.di.deps.auth import CurrentUserDep
 from src.repos import sql
 from src.schemas.enums.users import UserRole
 from src.schemas.pydantic import users as users_schema
+from src.services.logger import get_logger
 from src.utils.mappers import map_model
 
 router = APIRouter(prefix="/users", route_class=DishkaRoute)
+
+logger = get_logger().bind(layer="endpoint", module="users")
 
 _VIEWER_START_BALANCE = 100
 
 
 @router.get("/me", response_model=users_schema.UserResponse)
 @inject
-async def get_me(
-	user: CurrentUserDep,
-) -> users_schema.UserResponse:
+async def get_me(user: CurrentUserDep) -> users_schema.UserResponse:
+	log = logger.bind(request_user_id=user.telegram_id)
+	log.debug("GET /users/me", role=user.role)
 	return map_model(user, users_schema.UserResponse)
 
 
@@ -31,16 +34,17 @@ async def set_role(
 	session: FromDishka[AsyncSession],
 	user: CurrentUserDep,
 ) -> users_schema.UserRoleResponse:
-	"""
-	Выбор роли. Разрешён только один раз (пока роль = null).
-	Viewer получает 100 стартовых монет.
-	"""
+	log = logger.bind(request_user_id=user.telegram_id, request_role=body.role)
+	log.debug("PATCH /users/me/role")
+
 	if user.role is not None:
+		log.error("role already set", current_role=user.role)
 		raise RoleAlreadySetError
 
 	try:
 		role = UserRole(body.role)
 	except ValueError:
+		log.error("invalid role value", request_role=body.role)
 		raise InvalidRoleError
 
 	new_balance = _VIEWER_START_BALANCE if role is UserRole.VIEWER else None
@@ -52,4 +56,5 @@ async def set_role(
 		balance=new_balance,
 	)
 
+	log.info("role set", role=role.value, start_balance=new_balance)
 	return map_model(updated, users_schema.UserRoleResponse)

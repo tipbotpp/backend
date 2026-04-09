@@ -1,5 +1,4 @@
 import asyncio
-import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -22,9 +21,10 @@ from src.schemas.dataclasses.donations import (
 from src.schemas.dataclasses.users import UserDTO
 from src.schemas.enums.balance import BalanceTransactionType
 from src.schemas.enums.users import UserRole
+from src.services.logger import get_logger
 from src.services.ml import MLService
 
-logger = logging.getLogger(__name__)
+logger = get_logger().bind(layer="service", module="donations")
 
 
 class DonationService:
@@ -45,31 +45,45 @@ class DonationService:
 		amount: int,
 		message: str | None,
 	) -> DonationDTO:
+		log = logger.bind(
+			request_user_id=user.telegram_id,
+			request_streamer_id=streamer_id,
+			request_amount=amount,
+			request_message=message,
+		)
+		log.info("donation.send started")
+
 		if user.role != UserRole.VIEWER:
+			log.error("viewer role required", user_role=user.role)
 			raise ViewerRequiredError()
 
 		if user.telegram_id == streamer_id:
+			log.error("user cannot donate to themselves")
 			raise ForbiddenError()
 
 		streamer = await sql.users_repo.get_by_telegram_id(self._session, streamer_id)
 		if streamer is None or streamer.role != UserRole.STREAMER:
+			log.error("streamer not found")
 			raise UserNotFoundError()
 
 		stream_session = await sql.stream_sessions_repo.get_active_by_streamer_id(self._session, streamer_id)
 		if stream_session is None:
+			log.error("stream not active")
 			raise StreamNotActiveError()
 
 		if user.balance < amount:
+			log.error("insufficient balance", user_balance=user.balance)
 			raise InsufficientBalanceError()
 
-		# Модерация — блокирует создание доната если текст нарушает правила
 		if message:
 			stop_words = await sql.stop_words_repo.get_by_streamer_id(self._session, streamer_id)
+			log.debug("moderation started", stop_words_count=len(stop_words))
 			await self._ml_service.moderate(
 				text=message,
 				stopwords=[sw.word for sw in stop_words],
 				streamer_id=streamer_id,
 			)
+			log.debug("moderation passed")
 
 		donation = await sql.donations_repo.create(
 			self._session,
@@ -82,6 +96,7 @@ class DonationService:
 				status="processing",
 			),
 		)
+		log.info("donation created", donation_id=donation.id)
 
 		await sql.users_repo.update_balance(self._session, user.telegram_id, user.balance - amount)
 		await sql.balance_transactions_repo.create(
@@ -105,10 +120,10 @@ class DonationService:
 			),
 		)
 
-		# TTS запускается фоново — не блокирует ответ клиенту
 		if message:
 			alert_settings = await sql.alert_settings_repo.get_by_streamer_id(self._session, streamer_id)
 			voice = alert_settings.tts_voice if alert_settings else "silero_v3_ru"
+			log.debug("tts task scheduled", donation_id=donation.id, voice=voice)
 			asyncio.create_task(
 				self._process_tts(
 					donation_id=donation.id,
@@ -129,6 +144,13 @@ class DonationService:
 		amount: int,
 		voice: str,
 	) -> None:
+		log = logger.bind(
+			donation_id=donation_id,
+			donor_name=donor_name,
+			request_amount=amount,
+			voice=voice,
+		)
+		log.info("tts.process started")
 		try:
 			result = await self._ml_service.synthesize_tts(
 				text=text,
@@ -144,8 +166,9 @@ class DonationService:
 					audio_url=result.audio_url,
 					status="delivered",
 				)
-		except Exception:
-			logger.exception("TTS failed for donation %d", donation_id)
+			log.info("tts.process done", audio_url=result.audio_url)
+		except Exception as e:
+			log.error("tts.process failed", error=str(e))
 
 	async def get_history(
 		self,
@@ -154,20 +177,36 @@ class DonationService:
 		limit: int,
 		offset: int,
 	) -> tuple[list[DonationWithUsersDTO], int]:
-		return await sql.donations_repo.get_history(
+		log = logger.bind(
+			request_user_id=user.telegram_id,
+			request_type_filter=type_filter,
+			request_limit=limit,
+			request_offset=offset,
+		)
+		log.debug("donation.get_history started")
+		result = await sql.donations_repo.get_history(
 			self._session,
 			user.telegram_id,
 			type_filter,
 			limit,
 			offset,
 		)
+		log.debug("donation.get_history done", count=result[1])
+		return result
 
 	async def get_session_stats(self, user: UserDTO) -> SessionStatsDTO:
+		log = logger.bind(request_user_id=user.telegram_id)
+		log.debug("donation.get_session_stats started")
+
 		if user.role != UserRole.STREAMER:
+			log.error("streamer role required", user_role=user.role)
 			raise StreamerRequiredError()
 
 		stream_session = await sql.stream_sessions_repo.get_active_by_streamer_id(self._session, user.telegram_id)
 		if stream_session is None:
+			log.error("no active stream session")
 			raise StreamNotActiveError()
 
-		return await sql.donations_repo.get_session_stats(self._session, stream_session.id)
+		stats = await sql.donations_repo.get_session_stats(self._session, stream_session.id)
+		log.debug("donation.get_session_stats done", session_id=stream_session.id)
+		return stats
