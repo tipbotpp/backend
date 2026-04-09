@@ -81,6 +81,14 @@ class S3(BaseModel):
 			"в проде лучше хранить в секрет-менеджере."
 		),
 	)
+	presigned_url_ttl: int = Field(
+		default=3600,
+		description=(
+			"TTL presigned URL в секундах.\n"
+			"Когда менять → уменьшайте для повышения безопасности, "
+			"увеличивайте если клиенты кешируют ссылки надолго."
+		),
+	)
 
 	@property
 	def internal_host(self) -> str:
