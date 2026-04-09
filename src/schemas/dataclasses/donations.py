@@ -44,6 +44,8 @@ class DonationWithUsersDTO:
 	amount: int
 	message: str | None
 	status: str
+	audio_key: str | None
+	image_key: str | None
 	from_user: DonorDTO
 	to_streamer: DonorDTO
 	created_at: datetime
