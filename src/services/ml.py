@@ -67,5 +67,5 @@ class MLService:
 				donation_id=donation_id,
 			),
 		)
-		log.info("ml.synthesize_tts done", audio_url=result.audio_url, duration_sec=result.duration_sec)
+		log.info("ml.synthesize_tts done", audio_key=result.audio_key, duration_sec=result.duration_sec)
 		return result
