@@ -14,7 +14,7 @@ from src.core.configs.app import App, Auth, Logging
 from src.core.configs.bot import Bot
 from src.core.configs.database import Database
 from src.core.configs.dev import Dev
-from src.core.configs.infrastructure import MLService, S3, Redis
+from src.core.configs.infrastructure import S3, MLService, Redis
 
 if __name__ == "__main__":
 	import sys

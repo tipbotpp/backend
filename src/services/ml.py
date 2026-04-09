@@ -1,8 +1,15 @@
 import httpx
 
-from src.core.exc.exceptions import DonationRejectedStopwordError, DonationRejectedToxicityError
+from src.core.exc.exceptions import (
+	DonationRejectedStopwordError,
+	DonationRejectedToxicityError,
+)
 from src.gateways import ml as ml_gateway
-from src.schemas.dataclasses.ml import ModerationRequestDTO, TTSRequestDTO, TTSResultDTO
+from src.schemas.dataclasses.ml import (
+	ModerationRequestDTO,
+	TTSRequestDTO,
+	TTSResultDTO,
+)
 
 
 class MLService:

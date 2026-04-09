@@ -116,7 +116,7 @@ class DonationService:
 					donor_name=user.username or str(user.telegram_id),
 					amount=amount,
 					voice=voice,
-				)
+				),
 			)
 
 		return donation
