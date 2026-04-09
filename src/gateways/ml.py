@@ -60,9 +60,9 @@ async def synthesize_tts(client: httpx.AsyncClient, dto: TTSRequestDTO) -> TTSRe
 	data = response.json()
 
 	result = TTSResultDTO(
-		audio_url=data["audio_url"],
+		audio_key=data["audio_key"],
 		duration_sec=data["duration_sec"],
 		donation_id=data["donation_id"],
 	)
-	log.debug("gateway.synthesize_tts response", audio_url=result.audio_url, status_code=response.status_code)
+	log.debug("gateway.synthesize_tts response", audio_key=result.audio_key, status_code=response.status_code)
 	return result
