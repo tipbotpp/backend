@@ -56,5 +56,19 @@ class DonateText:
 		return text
 
 	@staticmethod
+	def rejected_toxicity() -> str:
+		return (
+			"🚫 <b>Сообщение нарушает правила сообщества и было отклонено.</b>\n"
+			"Монеты не списаны. Попробуй другой текст."
+		)
+
+	@staticmethod
+	def rejected_stopword() -> str:
+		return (
+			"🚫 <b>Сообщение содержит запрещённое слово стримера.</b>\n"
+			"Монеты не списаны."
+		)
+
+	@staticmethod
 	def cancelled() -> str:
 		return "❌ Отменено."
