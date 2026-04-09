@@ -29,6 +29,6 @@ class TTSRequestDTO:
 
 @dataclass(slots=True)
 class TTSResultDTO:
-	audio_url: str
+	audio_key: str
 	duration_sec: float
 	donation_id: int
