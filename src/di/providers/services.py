@@ -1,10 +1,12 @@
+import httpx
 from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.services.auth import AuthService
 from src.services.balance import BalanceService
 from src.services.donations import DonationService
+from src.services.ml import MLService
 
 
 class ServiceProvider(Provider):
@@ -19,5 +21,14 @@ class ServiceProvider(Provider):
 		return BalanceService(session)
 
 	@provide
-	def get_donation_service(self, session: AsyncSession) -> DonationService:
-		return DonationService(session)
+	def get_ml_service(self, client: httpx.AsyncClient) -> MLService:
+		return MLService(client)
+
+	@provide
+	def get_donation_service(
+		self,
+		session: AsyncSession,
+		session_factory: async_sessionmaker[AsyncSession],
+		ml_service: MLService,
+	) -> DonationService:
+		return DonationService(session, session_factory, ml_service)
