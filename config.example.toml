@@ -56,6 +56,7 @@ aws_access_key = "<minio-access-key>"
 aws_secret_access_key = "<minio-secret-key>"
 aws_region = "us-east-1"
 aws_bucket = "app-bucket"
+presigned_url_ttl = 3600
 
 
 # ================================

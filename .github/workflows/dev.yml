@@ -79,6 +79,7 @@ jobs:
           echo 'aws_access_key = "${{ secrets.MINIO_ROOT_USER }}"' >> config.toml
           echo 'aws_secret_access_key = "${{ secrets.MINIO_ROOT_PASSWORD }}"' >> config.toml
           echo 'aws_bucket = "${{ secrets.DEV_S3_BUCKET }}"' >> config.toml
+          echo 'presigned_url_ttl = ${{ secrets.DEV_S3_PRESIGNED_TTL }}' >> config.toml
           echo '' >> config.toml
           echo '[auth]' >> config.toml
           echo 'jwt_private_key = """' >> config.toml
