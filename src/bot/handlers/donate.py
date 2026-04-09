@@ -8,6 +8,8 @@ from src.bot.keyboards.donate import DonateKeyboards
 from src.bot.states.donate import DonateStates
 from src.bot.texts.donate import DonateText
 from src.core.exc.exceptions import (
+	DonationRejectedStopwordError,
+	DonationRejectedToxicityError,
 	InsufficientBalanceError,
 	StreamNotActiveError,
 	UserNotFoundError,
@@ -148,6 +150,12 @@ async def _send_donation(
 		return
 	except (UserNotFoundError, StreamNotActiveError):
 		await message.answer(DonateText.streamer_no_active_stream(streamer_name))
+		return
+	except DonationRejectedToxicityError:
+		await message.answer(DonateText.rejected_toxicity())
+		return
+	except DonationRejectedStopwordError:
+		await message.answer(DonateText.rejected_stopword())
 		return
 
 	await message.answer(DonateText.success(streamer_name))
