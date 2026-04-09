@@ -32,3 +32,18 @@ class TTSResultDTO:
 	audio_key: str
 	duration_sec: float
 	donation_id: int
+
+
+@dataclass(slots=True)
+class ImageRequestDTO:
+	text: str
+	donor_name: str
+	amount: int
+	donation_id: int
+	style_hint: str = "bright, celebration, coins"
+
+
+@dataclass(slots=True)
+class ImageResultDTO:
+	image_key: str
+	donation_id: int
