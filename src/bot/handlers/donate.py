@@ -135,7 +135,6 @@ async def _send_donation(
 	await state.clear()
 
 	user_dto = map_model(user, UserDTO)
-	donor_name = user.display_name or user.username or str(user.telegram_id)
 
 	try:
 		await donation_service.send(
@@ -152,9 +151,4 @@ async def _send_donation(
 		return
 
 	await message.answer(DonateText.success(streamer_name))
-
-	if message.bot:
-		await message.bot.send_message(
-			chat_id=streamer_id,
-			text=DonateText.notification_to_streamer(donor_name, amount, message_text),
-		)
+	# Уведомление стримеру отправляет arq-воркер после обработки TTS/Image
