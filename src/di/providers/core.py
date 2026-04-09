@@ -1,6 +1,8 @@
 from collections.abc import AsyncIterator
 
 import httpx
+from arq import create_pool
+from arq.connections import ArqRedis, RedisSettings
 from dishka import Provider, Scope, provide
 from redis.asyncio import ConnectionPool, Redis
 from sqlalchemy.ext.asyncio import (
@@ -66,5 +68,20 @@ class CoreProvider(Provider):
 			timeout=cfg.ml_service.timeout_seconds,
 		) as client:
 			yield client
+
+	# ========== arq Queue ==========
+	@provide
+	async def get_arq_pool(self) -> AsyncIterator[ArqRedis]:
+		"""arq Redis-пул для постановки задач в очередь."""
+		pool = await create_pool(
+			RedisSettings(
+				host=cfg.redis.host,
+				port=cfg.redis.port,
+				database=cfg.redis.db,
+				password=cfg.redis.password,
+			)
+		)
+		yield pool
+		await pool.aclose()
 
 
