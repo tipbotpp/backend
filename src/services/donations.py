@@ -2,7 +2,6 @@ import asyncio
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.core.configs import cfg
 from src.core.exc.exceptions import (
 	ForbiddenError,
 	InsufficientBalanceError,
@@ -11,7 +10,6 @@ from src.core.exc.exceptions import (
 	UserNotFoundError,
 	ViewerRequiredError,
 )
-from src.core.storages import S3Manager
 from src.repos import sql
 from src.schemas.dataclasses.balance import BalanceTransactionCreateDTO
 from src.schemas.dataclasses.donations import (
@@ -35,12 +33,10 @@ class DonationService:
 		session: AsyncSession,
 		session_factory: async_sessionmaker[AsyncSession],
 		ml_service: MLService,
-		s3: S3Manager,
 	) -> None:
 		self._session = session
 		self._session_factory = session_factory
 		self._ml_service = ml_service
-		self._s3 = s3
 
 	async def send(
 		self,
@@ -163,12 +159,11 @@ class DonationService:
 				voice=voice,
 				donation_id=donation_id,
 			)
-			audio_url = await self._s3.generate_presigned_url(cfg.s3.aws_bucket, result.audio_key)
 			async with self._session_factory.begin() as session:
 				await sql.donations_repo.update_ml_artifacts(
 					session,
 					donation_id,
-					audio_url=audio_url,
+					audio_url=result.audio_key,
 					status="delivered",
 				)
 			log.info("tts.process done", audio_key=result.audio_key)
