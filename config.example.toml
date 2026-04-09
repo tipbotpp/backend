@@ -94,6 +94,15 @@ jwt_public_key = """
 
 
 # ================================
+#  ML SERVICE SETTINGS
+# ================================
+[ml_service]
+host = "http://ml-service:8001"
+internal_secret = "<ml-internal-secret>"
+timeout_seconds = 30
+
+
+# ================================
 #  LOGGING SETTINGS
 # ================================
 [logging]
