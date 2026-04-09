@@ -9,10 +9,9 @@
 """
 import asyncio
 
+import httpx
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import async_sessionmaker
-
-import httpx
 
 from src.gateways import ml as ml_gateway
 from src.repos import sql
@@ -64,7 +63,7 @@ async def process_donation_media(
 					voice=voice,
 					donation_id=donation_id,
 				),
-			)
+			),
 		)
 	else:
 		media_tasks.append(asyncio.sleep(0))
@@ -79,7 +78,7 @@ async def process_donation_media(
 					amount=amount,
 					donation_id=donation_id,
 				),
-			)
+			),
 		)
 	else:
 		media_tasks.append(asyncio.sleep(0))

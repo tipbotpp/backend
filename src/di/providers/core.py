@@ -79,7 +79,7 @@ class CoreProvider(Provider):
 				port=cfg.redis.port,
 				database=cfg.redis.db,
 				password=cfg.redis.password,
-			)
+			),
 		)
 		yield pool
 		await pool.aclose()
