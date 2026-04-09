@@ -92,7 +92,7 @@ async def get_history(
 				to_streamer=donations_schema.DonorResponse(id=item.to_streamer.id, username=item.to_streamer.username),
 				created_at=item.created_at,
 			)
-			for item, audio_url, image_url in zip(items, audio_urls, image_urls)
+			for item, audio_url, image_url in zip(items, audio_urls, image_urls, strict=True)
 		],
 		total=total,
 		limit=filters.limit,
