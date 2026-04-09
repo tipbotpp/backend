@@ -1,6 +1,5 @@
-import asyncio
-
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from arq.connections import ArqRedis
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exc.exceptions import (
 	ForbiddenError,
@@ -31,12 +30,12 @@ class DonationService:
 	def __init__(
 		self,
 		session: AsyncSession,
-		session_factory: async_sessionmaker[AsyncSession],
 		ml_service: MLService,
+		arq_pool: ArqRedis,
 	) -> None:
 		self._session = session
-		self._session_factory = session_factory
 		self._ml_service = ml_service
+		self._arq_pool = arq_pool
 
 	async def send(
 		self,
@@ -49,7 +48,7 @@ class DonationService:
 			request_user_id=user.telegram_id,
 			request_streamer_id=streamer_id,
 			request_amount=amount,
-			request_message=message,
+			request_message_length=len(message) if message else 0,
 		)
 		log.info("donation.send started")
 
@@ -120,55 +119,25 @@ class DonationService:
 			),
 		)
 
-		if message:
-			alert_settings = await sql.alert_settings_repo.get_by_streamer_id(self._session, streamer_id)
-			voice = alert_settings.tts_voice if alert_settings else "silero_v3_ru"
-			log.debug("tts task scheduled", donation_id=donation.id, voice=voice)
-			asyncio.create_task(
-				self._process_tts(
-					donation_id=donation.id,
-					text=message,
-					donor_name=user.username or str(user.telegram_id),
-					amount=amount,
-					voice=voice,
-				),
-			)
+		alert_settings = await sql.alert_settings_repo.get_by_streamer_id(self._session, streamer_id)
+		tts_enabled = bool(message) and (alert_settings.tts_enabled if alert_settings else True)
+		image_enabled = bool(message) and (alert_settings.image_enabled if alert_settings else True)
+		voice = alert_settings.tts_voice if alert_settings else "silero_v3_ru"
+
+		await self._arq_pool.enqueue_job(
+			"process_donation_media",
+			donation_id=donation.id,
+			text=message,
+			donor_name=user.username or str(user.telegram_id),
+			amount=amount,
+			voice=voice,
+			tts_enabled=tts_enabled,
+			image_enabled=image_enabled,
+			streamer_id=streamer_id,
+		)
+		log.info("donation.send done — media task enqueued", donation_id=donation.id)
 
 		return donation
-
-	async def _process_tts(
-		self,
-		donation_id: int,
-		text: str,
-		donor_name: str,
-		amount: int,
-		voice: str,
-	) -> None:
-		log = logger.bind(
-			donation_id=donation_id,
-			donor_name=donor_name,
-			request_amount=amount,
-			voice=voice,
-		)
-		log.info("tts.process started")
-		try:
-			result = await self._ml_service.synthesize_tts(
-				text=text,
-				donor_name=donor_name,
-				amount=amount,
-				voice=voice,
-				donation_id=donation_id,
-			)
-			async with self._session_factory.begin() as session:
-				await sql.donations_repo.update_ml_artifacts(
-					session,
-					donation_id,
-					audio_url=result.audio_key,
-					status="delivered",
-				)
-			log.info("tts.process done", audio_key=result.audio_key)
-		except Exception as e:
-			log.error("tts.process failed", error=str(e))
 
 	async def get_history(
 		self,
