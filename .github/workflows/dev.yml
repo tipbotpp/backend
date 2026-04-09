@@ -96,7 +96,7 @@ jobs:
           echo 'internal_secret = "${{ secrets.DEV_ML_INTERNAL_SECRET }}"' >> config.toml
           echo '' >> config.toml
           echo '[logging]' >> config.toml
-          echo 'level = "INFO"' >> config.toml
+          echo 'level = "${{ secrets.DEV_LOGGING_LEVEL }}"' >> config.toml
           echo '' >> config.toml
           echo '[dev]' >> config.toml
           echo 'enabled = ${{ secrets.DEV_MODE_ENABLED }}' >> config.toml
