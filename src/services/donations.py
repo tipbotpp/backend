@@ -11,6 +11,7 @@ from src.core.exc.exceptions import (
 	UserNotFoundError,
 	ViewerRequiredError,
 )
+from src.core.storages import S3Manager
 from src.repos import sql
 from src.schemas.dataclasses.balance import BalanceTransactionCreateDTO
 from src.schemas.dataclasses.donations import (
@@ -22,7 +23,6 @@ from src.schemas.dataclasses.donations import (
 from src.schemas.dataclasses.users import UserDTO
 from src.schemas.enums.balance import BalanceTransactionType
 from src.schemas.enums.users import UserRole
-from src.core.storages import S3Manager
 from src.services.logger import get_logger
 from src.services.ml import MLService
 
