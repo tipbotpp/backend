@@ -24,6 +24,7 @@ dependencies = [
     "cryptography>=46.0.5",
     "tzdata>=2024.1",
     "prometheus-fastapi-instrumentator>=7.1.0",
+    "httpx>=0.28.0",
 ]
 
 [project.optional-dependencies]
