@@ -1,7 +1,8 @@
 import httpx
+from arq.connections import ArqRedis
 from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.services.auth import AuthService
 from src.services.balance import BalanceService
@@ -28,7 +29,7 @@ class ServiceProvider(Provider):
 	def get_donation_service(
 		self,
 		session: AsyncSession,
-		session_factory: async_sessionmaker[AsyncSession],
 		ml_service: MLService,
+		arq_pool: ArqRedis,
 	) -> DonationService:
-		return DonationService(session, session_factory, ml_service)
+		return DonationService(session, ml_service, arq_pool)
