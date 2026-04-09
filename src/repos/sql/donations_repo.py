@@ -77,6 +77,8 @@ async def get_history(
 			amount=donation.amount,
 			message=donation.message,
 			status=donation.status,
+			audio_key=donation.audio_url,
+			image_key=donation.image_url,
 			from_user=DonorDTO(id=from_user.telegram_id, username=from_user.username),
 			to_streamer=DonorDTO(id=to_streamer.telegram_id, username=to_streamer.username),
 			created_at=donation.created_at,
