@@ -1,6 +1,8 @@
 from collections.abc import AsyncIterator
-from typing import Any
 
+import httpx
+from arq import create_pool
+from arq.connections import ArqRedis, RedisSettings
 from dishka import Provider, Scope, provide
 from redis.asyncio import ConnectionPool, Redis
 from sqlalchemy.ext.asyncio import (
@@ -10,8 +12,9 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from src.core.cache import create_redis_client, create_redis_pool
+from src.core.configs import cfg
 from src.core.db import create_engine, create_session_factory
-from src.core.storages import get_s3_client, get_s3_external_client
+from src.core.storages import S3Manager
 from src.services.logger import AbstractLogger, get_logger
 
 
@@ -49,18 +52,36 @@ class CoreProvider(Provider):
 		"""Логгер на всё приложение."""
 		return get_logger()
 
-
-class RequestProvider(Provider):
-	scope = Scope.REQUEST
-
+	# ========== S3 ==========
 	@provide
-	async def get_s3_client(self) -> AsyncIterator[Any]:
-		"""Provide S3 клиента на время запроса."""
-		async with get_s3_client() as client:
-			yield client  # Dishka автоматически закроет после REQUEST
+	def get_s3_manager(self) -> S3Manager:
+		"""S3Manager живёт на всё приложение."""
+		return S3Manager()
 
+	# ========== ML Service HTTP Client ==========
 	@provide
-	async def get_s3_external_client(self) -> AsyncIterator[Any]:
-		"""Provide S3 клиента на время запроса."""
-		async with get_s3_external_client() as client:
-			yield client  # Dishka автоматически закроет после REQUEST
+	async def get_ml_client(self) -> AsyncIterator[httpx.AsyncClient]:
+		"""HTTP-клиент к ML-сервису. Живёт на всё приложение."""
+		async with httpx.AsyncClient(
+			base_url=cfg.ml_service.host,
+			headers={"X-Internal-Secret": cfg.ml_service.internal_secret},
+			timeout=cfg.ml_service.timeout_seconds,
+		) as client:
+			yield client
+
+	# ========== arq Queue ==========
+	@provide
+	async def get_arq_pool(self) -> AsyncIterator[ArqRedis]:
+		"""arq Redis-пул для постановки задач в очередь."""
+		pool = await create_pool(
+			RedisSettings(
+				host=cfg.redis.host,
+				port=cfg.redis.port,
+				database=cfg.redis.db,
+				password=cfg.redis.password,
+			),
+		)
+		yield pool
+		await pool.aclose()
+
+

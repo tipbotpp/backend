@@ -5,8 +5,9 @@ from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
-from src.api import router_v1
+from src.api import router
 from src.core.configs import cfg
 from src.core.exc.handlers import ExceptionHandlers
 from src.core.middlewares.logging import HTTPLoggingMiddleware
@@ -17,7 +18,7 @@ from src.lifespan import lifespan
 app = FastAPI(lifespan=lifespan, title=cfg.app.title)
 
 # ========== Routers ==========
-app.include_router(router_v1)
+app.include_router(router)
 
 # ========== Exception handlers ==========
 ExceptionHandlers.register(app)
@@ -32,6 +33,9 @@ app.add_middleware(
 	allow_origins=cfg.app.allow_origins,
 )
 app.add_middleware(cast(Any, GZipMiddleware))
+
+# ========== Metrics ==========
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 # ========== DI ==========
 container = get_container()

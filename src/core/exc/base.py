@@ -3,7 +3,7 @@ from typing import Any
 from fastapi import HTTPException
 
 
-class Base(HTTPException):
+class BaseHTTPException(HTTPException):
 	status_code: int
 	detail: str
 	headers: dict[str, str] | None = None

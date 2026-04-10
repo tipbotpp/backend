@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 class App(BaseModel):
 	title: str = Field(
-		default="FastAPI Application",
+		default="TipBot API",
 		description=(
 			"Название приложения, отображаемое в документации и заголовке сервера.\n"
 			"Когда менять → используйте понятное название вашего приложения."
@@ -47,11 +47,11 @@ class App(BaseModel):
 			"Когда менять → включайте на dev/CI для отладки; выключайте в проде."
 		),
 	)
-	tz_offset_hours: float = Field(
-		default=3.0,
+	tz_name: str = Field(
+		default="Europe/Moscow",
 		description=(
-			"Смещение часового пояса относительно UTC.\n"
-			"Когда менять → используйте 3.0 для Москвы."
+			"IANA-имя часового пояса (например, 'Europe/Moscow', 'UTC', 'America/New_York').\n"
+			"Когда менять → укажите нужный часовой пояс для вашего окружения."
 		),
 	)
 	default_offset: int = Field(
@@ -78,6 +78,40 @@ class App(BaseModel):
 			"Список разрешённых CORS-источников.\n"
 			"Когда менять → указывайте конкретные домены в проде."
 		),
+	)
+	mini_app_url: str = Field(
+		default="https://t.me/your_bot/app",
+		description=(
+			"URL Telegram Mini App.\n"
+			"Когда менять → укажите ссылку вида https://t.me/<bot>/<app_short_name>."
+		),
+	)
+
+
+class Auth(BaseModel):
+	jwt_private_key: str = Field(
+		default="",
+		description=(
+			"RSA приватный ключ в формате PEM для подписи JWT (RS256).\n"
+			"Генерация: `openssl genrsa -out private.pem 2048`\n"
+			"Когда менять → генерируйте уникальную пару ключей для каждого окружения."
+		),
+	)
+	jwt_public_key: str = Field(
+		default="",
+		description=(
+			"RSA публичный ключ в формате PEM для верификации JWT.\n"
+			"Генерация: `openssl rsa -in private.pem -pubout -out public.pem`\n"
+			"Можно раздавать другим сервисам — они верифицируют токены без приватного ключа."
+		),
+	)
+	jwt_algorithm: str = Field(
+		default="RS256",
+		description="Алгоритм подписи JWT. RS256 — асимметричный, рекомендуется для мультисервисной архитектуры.",
+	)
+	jwt_expire_seconds: int = Field(
+		default=2592000,
+		description="Время жизни JWT токена в секундах. По умолчанию 30 дней.",
 	)
 
 

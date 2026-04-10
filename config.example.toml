@@ -8,11 +8,12 @@ port = 8000
 workers = 1
 reload = false
 debug = false
-tz_offset_hours = 3.0
+tz_name = "Europe/Moscow"
 default_offset = 0
 default_limit = 20
 maximum_limit = 100
 allow_origins = ["*"]
+mini_app_url = "https://t.me/<bot_username>/<app_short_name>"
 
 
 # ================================
@@ -55,6 +56,7 @@ aws_access_key = "<minio-access-key>"
 aws_secret_access_key = "<minio-secret-key>"
 aws_region = "us-east-1"
 aws_bucket = "app-bucket"
+presigned_url_ttl = 3600
 
 
 # ================================
@@ -71,7 +73,49 @@ socket_connect_timeout = 5
 
 
 # ================================
+#  AUTH SETTINGS (RS256 JWT)
+# ================================
+# Генерация ключей:
+#   openssl genrsa -out private.pem 2048
+#   openssl rsa -in private.pem -pubout -out public.pem
+# Затем вставь содержимое файлов ниже (с \n вместо переносов строк).
+[auth]
+jwt_algorithm = "RS256"
+jwt_expire_seconds = 2592000  # 30 дней
+jwt_private_key = """
+-----BEGIN RSA PRIVATE KEY-----
+<вставь приватный ключ>
+-----END RSA PRIVATE KEY-----
+"""
+jwt_public_key = """
+-----BEGIN PUBLIC KEY-----
+<вставь публичный ключ>
+-----END PUBLIC KEY-----
+"""
+
+
+# ================================
+#  ML SERVICE SETTINGS
+# ================================
+[ml_service]
+host = "http://ml-service:8001"
+internal_secret = "<ml-internal-secret>"
+timeout_seconds = 30
+
+
+# ================================
 #  LOGGING SETTINGS
 # ================================
 [logging]
 level = "INFO"
+
+
+# ================================
+#  DEV SETTINGS (только для разработки!)
+# ================================
+[dev]
+enabled = false
+telegram_id = 100000001
+username = "dev_user"
+display_name = "Dev User"
+mock_init_data = "your_secret_dev_token_here"

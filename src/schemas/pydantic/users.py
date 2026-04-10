@@ -10,7 +10,6 @@ from src.schemas.pydantic.common import (
 
 
 class UserResponse(BaseSchema):
-	id: int
 	telegram_id: int
 	username: str | None
 	display_name: str | None
@@ -30,7 +29,7 @@ class UserRoleBody(BaseSchema):
 
 
 class UserRoleResponse(BaseSchema):
-	id: int
+	telegram_id: int
 	role: str
 	balance: int
 
@@ -49,7 +48,7 @@ class AlertPreview(BaseSchema):
 
 
 class StreamerItemResponse(BaseSchema):
-	id: int
+	telegram_id: int
 	username: str | None
 	display_name: str | None
 	avatar_url: str | None
@@ -62,7 +61,7 @@ class StreamerListResponse(Paginated[StreamerItemResponse]):
 
 
 class StreamerProfileResponse(BaseSchema):
-	id: int
+	telegram_id: int
 	username: str | None
 	display_name: str | None
 	avatar_url: str | None

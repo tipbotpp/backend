@@ -3,6 +3,39 @@
 run:
 	uv run python3 -m src
 
+# ——————— keys ———————
+KEYS_DIR ?= .keys
+
+.PHONY: keys/generate
+keys/generate:
+	@mkdir -p $(KEYS_DIR)
+	@openssl genrsa -out $(KEYS_DIR)/private.pem 2048
+	@openssl rsa -in $(KEYS_DIR)/private.pem -pubout -out $(KEYS_DIR)/public.pem
+	@echo ""
+	@echo "✅ Ключи сгенерированы в $(KEYS_DIR)/"
+	@echo ""
+	@echo "=== config.toml ==="
+	@echo "[auth]"
+	@awk 'NR==1{printf "jwt_private_key = \"\"\"\n"} {print} END{printf "\"\"\"\n"}' $(KEYS_DIR)/private.pem
+	@echo ""
+	@awk 'NR==1{printf "jwt_public_key = \"\"\"\n"} {print} END{printf "\"\"\"\n"}' $(KEYS_DIR)/public.pem
+	@echo ""
+	@echo "=== GitHub Secrets (base64) ==="
+	@echo "DEV_JWT_PRIVATE_KEY_B64:"
+	@base64 -i $(KEYS_DIR)/private.pem | tr -d '\n'
+	@echo ""
+	@echo "DEV_JWT_PUBLIC_KEY_B64:"
+	@base64 -i $(KEYS_DIR)/public.pem | tr -d '\n'
+	@echo ""
+
+.PHONY: keys/show
+keys/show:
+	@echo "=== PRIVATE KEY ==="
+	@cat $(KEYS_DIR)/private.pem
+	@echo ""
+	@echo "=== PUBLIC KEY ==="
+	@cat $(KEYS_DIR)/public.pem
+
 # ——————— lines ———————
 .PHONY: lines/scc
 lines/scc:
@@ -22,24 +55,31 @@ pre-commit/install:
 pre-commit/run:
 	uv run pre-commit run --all-files
 
-# ——————— ruff ———————
+# ——————— ruff & ty ———————
 .PHONY: format
 format:
 	@ruff format . > /dev/null 2>&1
-	@echo "code formatted"
+	@echo "✓ Code formatted"
 
 .PHONY: lint
 lint:
-	ruff check .
+	@echo "→ Checking code style..."
+	@ruff check .
 
 .PHONY: lint/fix
 lint/fix:
-	ruff check . --fix
+	@echo "→ Auto-fixing issues..."
+	@ruff check . --fix
+	@echo "✓ Fixed"
+
+.PHONY: typecheck
+typecheck:
+	@echo "→ Type checking..."
+	@ty check
 
 .PHONY: check
-check:
-	ruff check .
-#	ruff format --check .
+check: lint typecheck
+	@echo "✓ All checks passed"
 
 # ——————— alembic ———————
 .PHONY: revision

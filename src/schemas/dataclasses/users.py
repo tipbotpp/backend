@@ -6,12 +6,12 @@ from datetime import datetime
 
 @dataclass(slots=True)
 class UserDTO:
-	id: int
 	telegram_id: int
 	username: str | None
 	display_name: str | None
 	description: str | None
 	avatar_url: str | None
+	display_name_custom: bool
 	role: str | None
 	balance: int
 	created_at: datetime
@@ -46,7 +46,7 @@ class AlertPreviewDTO:
 
 @dataclass(slots=True)
 class StreamerItemDTO:
-	id: int
+	telegram_id: int
 	username: str | None
 	display_name: str | None
 	avatar_url: str | None
@@ -56,7 +56,7 @@ class StreamerItemDTO:
 
 @dataclass(slots=True)
 class StreamerProfileDTO:
-	id: int
+	telegram_id: int
 	username: str | None
 	display_name: str | None
 	avatar_url: str | None

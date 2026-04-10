@@ -19,8 +19,13 @@ dependencies = [
     "redis>=7.1.0",
     "sqlalchemy>=2.0.46",
     "structlog>=25.5.0",
-    "pyjwt>=2.11.0",
+    "pyjwt[cryptography]>=2.11.0",
     "aiogram>=3.26.0",
+    "cryptography>=46.0.5",
+    "tzdata>=2024.1",
+    "prometheus-fastapi-instrumentator>=7.1.0",
+    "httpx>=0.28.0",
+    "arq>=0.25.0",
 ]
 
 [project.optional-dependencies]

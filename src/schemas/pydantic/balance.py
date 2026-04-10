@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pydantic import Field
+
 from src.schemas.pydantic.common import BaseSchema
 
 
@@ -9,7 +11,7 @@ class BalanceResponse(BaseSchema):
 
 
 class TopupBody(BaseSchema):
-	amount: int
+	amount: int = Field(gt=0, description="Количество монет для пополнения")
 
 
 class TopupResponse(BaseSchema):

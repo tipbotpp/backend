@@ -1,6 +1,30 @@
 from pydantic import BaseModel, Field
 
 
+class MLService(BaseModel):
+	host: str = Field(
+		default="http://ml-service:8001",
+		description=(
+			"Базовый URL ML-сервиса.\n"
+			"Когда менять → при смене адреса ML-сервиса в docker-сети."
+		),
+	)
+	internal_secret: str = Field(
+		default="",
+		description=(
+			"Shared secret для заголовка X-Internal-Secret.\n"
+			"Когда менять → всегда указывайте в проде; лучше хранить в секрет-менеджере."
+		),
+	)
+	timeout_seconds: int = Field(
+		default=30,
+		description=(
+			"Таймаут запросов к ML-сервису в секундах.\n"
+			"Когда менять → увеличивайте при медленных моделях."
+		),
+	)
+
+
 class S3(BaseModel):
 	aws_host: str = Field(
 		default="http://localhost:9000",
@@ -55,6 +79,14 @@ class S3(BaseModel):
 			"Имя S3-бакета, в котором будут храниться файлы.\n"
 			"Когда менять → указывайте имя вашего бакета; "
 			"в проде лучше хранить в секрет-менеджере."
+		),
+	)
+	presigned_url_ttl: int = Field(
+		default=3600,
+		description=(
+			"TTL presigned URL в секундах.\n"
+			"Когда менять → уменьшайте для повышения безопасности, "
+			"увеличивайте если клиенты кешируют ссылки надолго."
 		),
 	)
 

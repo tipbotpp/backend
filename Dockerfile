@@ -68,7 +68,7 @@ USER appuser
 # Проверяем доступность /api/v1/health каждые 30 секунд
 # start-period даёт время на запуск приложения и миграции
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
 # Запуск: сначала миграции, затем сервер
 CMD ["sh", "-c", "alembic upgrade head && python -m src"]

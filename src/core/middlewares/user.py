@@ -56,7 +56,7 @@ class UserMiddleware(BaseMiddleware):
 					if user.username != tg_user.username:
 						user.username = tg_user.username
 						changed = True
-					if user.display_name != tg_user.full_name:
+					if not user.display_name_custom and user.display_name != tg_user.full_name:
 						user.display_name = tg_user.full_name
 						changed = True
 					if changed:

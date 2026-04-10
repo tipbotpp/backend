@@ -1,5 +1,5 @@
-from datetime import timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from pydantic_settings import (
 	BaseSettings,
@@ -10,10 +10,11 @@ from pydantic_settings import (
 	TomlConfigSettingsSource,
 )
 
-from src.core.configs.app import App, Logging
+from src.core.configs.app import App, Auth, Logging
 from src.core.configs.bot import Bot
 from src.core.configs.database import Database
-from src.core.configs.infrastructure import S3, Redis
+from src.core.configs.dev import Dev
+from src.core.configs.infrastructure import S3, MLService, Redis
 
 if __name__ == "__main__":
 	import sys
@@ -45,18 +46,18 @@ class Config(BaseSettings):
 	)
 
 	app: App = App()
+	auth: Auth = Auth()
 	bot: Bot = Bot()
 	database: Database = Database()
 	s3: S3 = S3()
 	redis: Redis = Redis()
+	ml_service: MLService = MLService()
 	logging: Logging = Logging()
+	dev: Dev = Dev()
 
 	@property
-	def tz(self) -> timezone:
-		return timezone(
-			offset=timedelta(hours=self.app.tz_offset_hours),
-			name="Europe/Moscow",
-		)
+	def tz(self) -> ZoneInfo:
+		return ZoneInfo(self.app.tz_name)
 
 	@classmethod
 	def settings_customise_sources(

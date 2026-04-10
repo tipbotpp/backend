@@ -135,6 +135,8 @@ cython_debug/
 # certificates
 certs/
 .certs/
+.keys/
+*.pem
 config.json
 config.toml
 docker_config.toml

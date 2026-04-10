@@ -20,7 +20,7 @@ T = TypeVar("T", bound="Base")
 class Base(DeclarativeBase):
 	TABLE_NAME: ClassVar[str]
 
-	@declared_attr
+	@declared_attr.directive
 	def __tablename__(cls) -> str:
 		table_name_value = cls.__dict__.get("TABLE_NAME")
 		if table_name_value and isinstance(table_name_value, str):
@@ -57,7 +57,7 @@ class Base(DeclarativeBase):
 		def _make_index_elements(index: Index) -> Callable[[], list[str]]:
 			def index_elements() -> list[str]:
 				return [
-					col.name if hasattr(col, "name") else str(col)
+					str(col.name) if hasattr(col, "name") else str(col)
 					for col in index.expressions
 				]
 
@@ -304,7 +304,7 @@ class Base(DeclarativeBase):
 		Commit выполняется автоматически зависимостью FastAPI.
 		Не выполняет commit - это делает dependency injection.
 		"""
-		session.delete(self)
+		await session.delete(self)
 
 	@classmethod
 	async def get_by_id(cls: type[T], session: AsyncSession, id: Any) -> T | None:

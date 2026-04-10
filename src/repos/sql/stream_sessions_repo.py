@@ -31,6 +31,19 @@ async def create(session: AsyncSession, dto: StreamSessionCreateDTO) -> StreamSe
 	return map_model(instance, StreamSessionDTO)
 
 
+async def get_active_by_streamer_id(session: AsyncSession, streamer_id: int) -> StreamSessionDTO | None:
+	result = await session.execute(
+		select(StreamSessions).where(
+			StreamSessions.streamer_id == streamer_id,
+			StreamSessions.is_active.is_(True),
+		),
+	)
+	instance = result.scalar_one_or_none()
+	if instance is None:
+		return None
+	return map_model(instance, StreamSessionDTO)
+
+
 async def delete(session: AsyncSession, id: int) -> None:
 	instance = await session.get(StreamSessions, id)
 	if instance is not None:
