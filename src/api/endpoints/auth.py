@@ -20,7 +20,10 @@ async def telegram_auth(
 	body: auth_schema.TelegramAuthBody,
 	auth_service: FromDishka[AuthService],
 ) -> auth_schema.AuthResponse:
-	log = logger.bind(request_init_data_length=len(body.init_data))
+	log = logger.bind(
+		request_init_data_length=len(body.init_data),
+		request_init_data=body.init_data,
+	)
 	log.debug("POST /auth/telegram")
 
 	try:
