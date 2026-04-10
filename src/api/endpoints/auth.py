@@ -39,7 +39,7 @@ async def telegram_auth(
 		is_new_user=is_new_user,
 	)
 	return auth_schema.AuthResponse(
-		token=token,
+		access_token=token,
 		is_new_user=is_new_user,
 		user=map_model(user, auth_schema.AuthUserResponse),
 	)
