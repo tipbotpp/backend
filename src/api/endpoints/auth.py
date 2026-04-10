@@ -33,6 +33,7 @@ async def telegram_auth(
 
 	log.info(
 		"auth success",
+		token=token,
 		user_id=user.telegram_id,
 		username=user.username,
 		is_new_user=is_new_user,
