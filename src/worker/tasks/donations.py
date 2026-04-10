@@ -85,13 +85,13 @@ async def process_donation_media(
 
 	tts_result, image_result = await asyncio.gather(*media_tasks, return_exceptions=True)
 
-	if isinstance(tts_result, Exception):
+	if isinstance(tts_result, BaseException):
 		log.error("tts failed", error=str(tts_result))
 	else:
 		audio_key = tts_result.audio_key
 		log.info("tts done", audio_key=audio_key)
 
-	if isinstance(image_result, Exception):
+	if isinstance(image_result, BaseException):
 		log.debug("image skipped or failed", error=str(image_result))
 	else:
 		image_key = image_result.image_key
