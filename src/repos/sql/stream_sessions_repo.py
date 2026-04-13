@@ -45,6 +45,16 @@ async def get_active_by_streamer_id(session: AsyncSession, streamer_id: int) -> 
 	return map_model(instance, StreamSessionDTO)
 
 
+async def get_by_stream_token(session: AsyncSession, stream_token: str) -> StreamSessionDTO | None:
+	result = await session.execute(
+		select(StreamSessions).where(StreamSessions.stream_token == stream_token),
+	)
+	instance = result.scalar_one_or_none()
+	if instance is None:
+		return None
+	return map_model(instance, StreamSessionDTO)
+
+
 async def deactivate(session: AsyncSession, id: int, ended_at: datetime) -> StreamSessionDTO | None:
 	instance = await session.get(StreamSessions, id)
 	if instance is None:
