@@ -15,7 +15,5 @@ class AuthUserResponse(BaseSchema):
 
 
 class AuthResponse(BaseSchema):
-	access_token: str
-	token_type: str = "bearer"
 	is_new_user: bool
 	user: AuthUserResponse
