@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dishka.integrations.fastapi import DishkaRoute, FromDishka, inject
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 
+from src.core.configs import cfg
 from src.core.exc.exceptions import InvalidInitDataError
 from src.schemas.pydantic import auth as auth_schema
 from src.services.auth import AuthService
@@ -18,6 +19,7 @@ logger = get_logger().bind(layer="endpoint", module="auth")
 @inject
 async def telegram_auth(
 	body: auth_schema.TelegramAuthBody,
+	response: Response,
 	auth_service: FromDishka[AuthService],
 ) -> auth_schema.AuthResponse:
 	log = logger.bind(
@@ -34,15 +36,22 @@ async def telegram_auth(
 
 	token, _ = await auth_service.create_session(user.telegram_id)
 
+	response.set_cookie(
+		key="access_token",
+		value=token,
+		httponly=True,
+		secure=not cfg.dev.enabled,
+		samesite="none" if not cfg.dev.enabled else "lax",
+		max_age=cfg.auth.jwt_expire_seconds,
+	)
+
 	log.info(
 		"auth success",
-		token=token,
 		user_id=user.telegram_id,
 		username=user.username,
 		is_new_user=is_new_user,
 	)
 	return auth_schema.AuthResponse(
-		access_token=token,
 		is_new_user=is_new_user,
 		user=map_model(user, auth_schema.AuthUserResponse),
 	)
