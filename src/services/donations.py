@@ -134,6 +134,11 @@ class DonationService:
 			tts_enabled=tts_enabled,
 			image_enabled=image_enabled,
 			streamer_id=streamer_id,
+			stream_token=stream_session.stream_token,
+			alert_bg_color=alert_settings.bg_color if alert_settings else "#1a1a2e",
+			alert_text_color=alert_settings.text_color if alert_settings else "#ffffff",
+			alert_font=alert_settings.font if alert_settings else "Roboto",
+			alert_duration_sec=alert_settings.duration_sec if alert_settings else 5,
 		)
 		log.info("donation.send done — media task enqueued", donation_id=donation.id)
 
