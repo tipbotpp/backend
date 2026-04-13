@@ -1,4 +1,5 @@
 import dataclasses
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,6 +42,17 @@ async def get_active_by_streamer_id(session: AsyncSession, streamer_id: int) -> 
 	instance = result.scalar_one_or_none()
 	if instance is None:
 		return None
+	return map_model(instance, StreamSessionDTO)
+
+
+async def deactivate(session: AsyncSession, id: int, ended_at: datetime) -> StreamSessionDTO | None:
+	instance = await session.get(StreamSessions, id)
+	if instance is None:
+		return None
+	instance.is_active = False
+	instance.ended_at = ended_at
+	await session.flush()
+	await session.refresh(instance)
 	return map_model(instance, StreamSessionDTO)
 
 
