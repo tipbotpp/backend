@@ -19,11 +19,9 @@ class AuthProvider(Provider):
 		session: AsyncSession,
 		auth_service: AuthService,
 	) -> UserDTO:
-		auth_header = request.headers.get("Authorization")
-		if not auth_header or not auth_header.startswith("Bearer "):
+		token = request.cookies.get("access_token")
+		if not token:
 			raise InvalidTokenError
-
-		token = auth_header.removeprefix("Bearer ").strip()
 
 		try:
 			telegram_id = await auth_service.verify_session(token)
