@@ -5,9 +5,9 @@ from src.api.endpoints.balance import router as balance_router
 from src.api.endpoints.donations import router as donations_router
 from src.api.endpoints.health import router as health_router
 from src.api.endpoints.jwks import router as jwks_router
+from src.api.endpoints.stream import router as stream_router
 from src.api.endpoints.users import router as users_router
 
-# TODO: добавить stream_router (POST /stream/start, POST /stream/stop, GET /stream/status)
 # TODO: добавить settings_router (GET/PATCH /settings/alert, POST /settings/alert/test,
 #       GET/PATCH /settings/goal, GET/POST/DELETE /settings/stopwords,
 #       GET/PATCH /settings/passive-income)
@@ -19,6 +19,7 @@ routers: dict[str, APIRouter] = {
 	"Users": users_router,
 	"Balance": balance_router,
 	"Donations": donations_router,
+	"Stream": stream_router,
 	"JWKS": jwks_router,
 	"Health": health_router,
 }
