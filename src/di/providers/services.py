@@ -8,6 +8,7 @@ from src.services.auth import AuthService
 from src.services.balance import BalanceService
 from src.services.donations import DonationService
 from src.services.ml import MLService
+from src.services.stream import StreamService
 
 
 class ServiceProvider(Provider):
@@ -33,3 +34,7 @@ class ServiceProvider(Provider):
 		arq_pool: ArqRedis,
 	) -> DonationService:
 		return DonationService(session, ml_service, arq_pool)
+
+	@provide
+	def get_stream_service(self, session: AsyncSession) -> StreamService:
+		return StreamService(session)
