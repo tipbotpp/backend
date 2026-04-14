@@ -4,7 +4,6 @@ from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
 from src.services.auth import AuthService
 from src.services.balance import BalanceService
 from src.services.donations import DonationService
@@ -37,5 +36,5 @@ class ServiceProvider(Provider):
 		return DonationService(session, ml_service, arq_pool)
 
 	@provide
-	def get_stream_service(self, session: AsyncSession, redis: Redis) -> StreamService:
-		return StreamService(session, redis)
+	def get_stream_service(self, session: AsyncSession) -> StreamService:
+		return StreamService(session)
