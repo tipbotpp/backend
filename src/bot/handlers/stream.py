@@ -7,7 +7,11 @@ from dishka.integrations.aiogram import FromDishka, inject
 
 from src.bot.keyboards.stream import StreamKeyboards
 from src.bot.texts.stream import StreamText
-from src.core.exc.exceptions import StreamAlreadyActiveError, StreamNotActiveError, StreamerRequiredError
+from src.core.exc.exceptions import (
+	StreamAlreadyActiveError,
+	StreamerRequiredError,
+	StreamNotActiveError,
+)
 from src.models.users import Users
 from src.schemas.dataclasses.users import UserDTO
 from src.services.stream import StreamService, make_widget_url
