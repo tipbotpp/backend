@@ -7,7 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.exc.exceptions import NotFoundError
 from src.repos import sql
 from src.schemas.dataclasses.settings import AlertSettingsDTO
-from src.schemas.pydantic.widget import WidgetAlertStyleSchema, WidgetResponse, WidgetStreamerSchema
+from src.schemas.pydantic.widget import (
+	WidgetAlertStyleSchema,
+	WidgetResponse,
+	WidgetStreamerSchema,
+)
 from src.services.logger import get_logger
 from src.services.stream import make_ws_url
 
