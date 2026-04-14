@@ -14,6 +14,7 @@ from src.core.exc.exceptions import (
 )
 from src.models.users import Users
 from src.schemas.dataclasses.users import UserDTO
+from src.schemas.enums.users import UserRole
 from src.services.stream import StreamService, make_widget_url
 from src.utils.mappers import map_model
 
@@ -28,6 +29,10 @@ async def cmd_stream(
 	user: Users,
 	stream_service: FromDishka[StreamService],
 ) -> None:
+	if user.role != UserRole.STREAMER:
+		await message.answer(StreamText.streamer_only())
+		return
+
 	user_dto = map_model(user, UserDTO)
 	active = await stream_service.get_status(user_dto)
 
