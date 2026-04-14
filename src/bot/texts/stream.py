@@ -44,6 +44,10 @@ class StreamText:
 		return "❌ Нет активного стрима."
 
 	@staticmethod
+	def streamer_only() -> str:
+		return "❌ Управление стримом доступно только для стримеров."
+
+	@staticmethod
 	def help_text() -> str:
 		return (
 			"ℹ️ <b>TipBot</b> — платформа донатов для стримеров.\n\n"
