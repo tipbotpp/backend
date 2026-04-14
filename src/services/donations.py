@@ -10,6 +10,7 @@ from src.core.exc.exceptions import (
 	ViewerRequiredError,
 )
 from src.repos import sql
+from src.repos.redis import ws_queue_repo
 from src.schemas.dataclasses.balance import BalanceTransactionCreateDTO
 from src.schemas.dataclasses.donations import (
 	DonationCreateDTO,
@@ -124,7 +125,7 @@ class DonationService:
 		image_enabled = bool(message) and (alert_settings.image_enabled if alert_settings else True)
 		voice = alert_settings.tts_voice if alert_settings else "silero_v3_ru"
 
-		await self._arq_pool.enqueue_job(
+		job = await self._arq_pool.enqueue_job(
 			"process_donation_media",
 			donation_id=donation.id,
 			text=message,
@@ -140,6 +141,8 @@ class DonationService:
 			alert_font=alert_settings.font if alert_settings else "Roboto",
 			alert_duration_sec=alert_settings.duration_sec if alert_settings else 5,
 		)
+		if job is not None:
+			await ws_queue_repo.push_job_id(self._arq_pool, stream_session.stream_token, job.job_id)
 		log.info("donation.send done — media task enqueued", donation_id=donation.id)
 
 		return donation
