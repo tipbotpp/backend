@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from dishka.integrations.fastapi import DishkaRoute, FromDishka, inject
 from fastapi import APIRouter
+from redis.asyncio import Redis
 
 from src.di.deps.auth import CurrentUserDep
+from src.repos.redis import ws_queue_repo
 from src.schemas.pydantic import stream as stream_schema
-from src.services.stream import StreamService, make_widget_url, make_ws_url
 from src.services.logger import get_logger
+from src.services.stream import StreamService, make_widget_url, make_ws_url
 from src.utils import local_time
 
 router = APIRouter(prefix="/stream", route_class=DishkaRoute)
@@ -40,12 +42,20 @@ async def start_stream(
 @inject
 async def stop_stream(
 	stream_service: FromDishka[StreamService],
+	redis: FromDishka[Redis],
 	user: CurrentUserDep,
 ) -> stream_schema.StreamStopResponse:
 	log = logger.bind(request_user_id=user.telegram_id)
 	log.debug("POST /stream/stop")
 
 	stopped, stats = await stream_service.stop(user)
+
+	await ws_queue_repo.push_control(
+		redis,
+		stopped.stream_token,
+		{"type": "stream_stopped", "session_id": stopped.id},
+	)
+	log.info("stream_stopped pushed to ws queue", stream_token=stopped.stream_token)
 
 	ended_at = stopped.ended_at or local_time.now()
 	duration_seconds = int((ended_at - stopped.started_at).total_seconds())
