@@ -2,21 +2,22 @@ from __future__ import annotations
 
 import secrets
 
-from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.configs import cfg
 from src.core.exc.exceptions import (
 	StreamAlreadyActiveError,
-	StreamNotActiveError,
 	StreamerRequiredError,
+	StreamNotActiveError,
 )
 from src.repos import sql
-from src.repos.redis import pubsub_repo
 from src.schemas.dataclasses.donations import SessionStatsDTO
-from src.schemas.dataclasses.streams import StreamSessionCreateDTO, StreamSessionDTO
-from src.schemas.enums.users import UserRole
+from src.schemas.dataclasses.streams import (
+	StreamSessionCreateDTO,
+	StreamSessionDTO,
+)
 from src.schemas.dataclasses.users import UserDTO
+from src.schemas.enums.users import UserRole
 from src.services.logger import get_logger
 from src.utils import local_time
 
@@ -33,9 +34,8 @@ def _ws_url(stream_token: str) -> str:
 
 
 class StreamService:
-	def __init__(self, session: AsyncSession, redis: Redis) -> None:
+	def __init__(self, session: AsyncSession) -> None:
 		self._session = session
-		self._redis = redis
 
 	async def start(
 		self,
@@ -86,18 +86,12 @@ class StreamService:
 
 		ended_at = local_time.now()
 		stopped = await sql.stream_sessions_repo.deactivate(self._session, active.id, ended_at)
+		if stopped is None:
+			raise StreamNotActiveError()
 		stats = await sql.donations_repo.get_session_stats(self._session, active.id)
 
 		log.info("stream.stop done", session_id=active.id)
-
-		await pubsub_repo.publish(
-			self._redis,
-			active.stream_token,
-			{"type": "stream_stopped", "session_id": active.id},
-		)
-		log.info("stream_stopped published", stream_token=active.stream_token)
-
-		return stopped, stats  # type: ignore[return-value]
+		return stopped, stats
 
 	async def get_status(self, user: UserDTO) -> StreamSessionDTO | None:
 		log = logger.bind(request_user_id=user.telegram_id)
