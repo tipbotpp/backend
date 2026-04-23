@@ -94,7 +94,7 @@ jobs:
           echo '' >> config.toml
           echo '[ml_service]' >> config.toml
           echo 'host = "${{ secrets.DEV_ML_SERVICE_HOST }}"' >> config.toml
-          echo 'internal_secret = "${{ secrets.DEV_ML_INTERNAL_SECRET }}"' >> config.toml
+          echo 'internal_secret = "${{ secrets.DEV_INTERNAL_SECRET }}"' >> config.toml
           echo '' >> config.toml
           echo '[logging]' >> config.toml
           echo 'level = "${{ secrets.DEV_LOGGING_LEVEL }}"' >> config.toml
