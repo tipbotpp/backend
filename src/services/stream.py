@@ -25,7 +25,7 @@ logger = get_logger().bind(layer="service", module="stream")
 
 
 def _widget_url(stream_token: str) -> str:
-	return f"{cfg.app.public_url}/widget/{stream_token}"
+	return f"{cfg.app.widget_base_url}/widget/{stream_token}"
 
 
 def _ws_url(stream_token: str) -> str:
