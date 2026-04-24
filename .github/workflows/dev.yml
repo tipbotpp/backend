@@ -58,6 +58,7 @@ jobs:
             echo 'tz_name = "${{ secrets.APP_TZ_NAME }}"' >> config.toml
             echo 'allow_origins = ${{ secrets.DEV_ALLOW_ORIGINS }}' >> config.toml
             echo 'mini_app_url = "${{ secrets.DEV_MINI_APP_URL }}"' >> config.toml
+            echo 'widget_base_url = "${{ secrets.DEV_WIDGET_BASE_URL }}"' >> config.toml
             echo 'public_url = "${{ secrets.DEV_PUBLIC_URL }}"' >> config.toml
             echo '' >> config.toml
 
