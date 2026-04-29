@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import contextlib
+
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -141,10 +143,10 @@ async def cb_stopword_delete(
     if not isinstance(msg, Message):
         return
 
-    try:
-        await settings_service.delete_stopword(_user_dto(user), callback_data.word_id)
-    except (NotFoundError, Exception):
-        pass  # уже удалено — просто обновим список
+    with contextlib.suppress(NotFoundError, Exception):
+        await settings_service.delete_stopword(
+            _user_dto(user), callback_data.word_id,
+        )
 
     words = await settings_service.get_stopwords(_user_dto(user))
     await msg.edit_text(
