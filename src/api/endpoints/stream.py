@@ -21,7 +21,7 @@ logger = get_logger().bind(layer="endpoint", module="stream")
 async def start_stream(
 	body: stream_schema.StreamStartBody,
 	stream_service: FromDishka[StreamService],
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 ) -> stream_schema.StreamStartResponse:
 	"""Запускает новую сессию стрима для стримера.
 
@@ -30,6 +30,8 @@ async def start_stream(
 
 	Args:
 		body: Флаг включения пассивного дохода для зрителей.
+		request_user: Текущий аутентифицированный пользователь (DI).
+		stream_service: Сервис стрима (DI).
 
 	Returns:
 		StreamStartResponse: Токен сессии, URL виджета и WebSocket.
@@ -39,18 +41,18 @@ async def start_stream(
 		403: Доступно только стримерам.
 		409: Стрим уже запущен.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("POST /stream/start")
 
-	session = await stream_service.start(user, body.passive_income_enabled)
+	stream_session = await stream_service.start(request_user, body.passive_income_enabled)
 
-	log.info("stream started", session_id=session.id)
+	log.info("stream started", session_id=stream_session.id)
 	return stream_schema.StreamStartResponse(
-		session_id=session.id,
-		stream_token=session.stream_token,
-		widget_url=make_widget_url(session.stream_token),
-		ws_url=make_ws_url(session.stream_token),
-		started_at=session.started_at,
+		session_id=stream_session.id,
+		stream_token=stream_session.stream_token,
+		widget_url=make_widget_url(stream_session.stream_token),
+		ws_url=make_ws_url(stream_session.stream_token),
+		started_at=stream_session.started_at,
 	)
 
 
@@ -59,12 +61,17 @@ async def start_stream(
 async def stop_stream(
 	stream_service: FromDishka[StreamService],
 	redis: FromDishka[Redis],
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 ) -> stream_schema.StreamStopResponse:
 	"""Завершает текущую активную сессию стрима.
 
 	Отправляет событие `stream_stopped` в OBS-виджет через WebSocket,
 	после чего виджет должен отключиться. Возвращает итоговую статистику сессии.
+
+	Args:
+		request_user: Текущий аутентифицированный пользователь (DI).
+		stream_service: Сервис стрима (DI).
+		redis: Redis-клиент для отправки события в WS-очередь (DI).
 
 	Returns:
 		StreamStopResponse: Общая сумма донатов, их количество и длительность стрима.
@@ -74,10 +81,10 @@ async def stop_stream(
 		403: Доступно только стримерам.
 		404: Нет активного стрима для остановки.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("POST /stream/stop")
 
-	stopped, stats = await stream_service.stop(user)
+	stopped, stats = await stream_service.stop(request_user)
 
 	await ws_queue_repo.push_control(
 		redis,
@@ -103,11 +110,15 @@ async def stop_stream(
 @inject
 async def stream_status(
 	stream_service: FromDishka[StreamService],
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 ) -> stream_schema.StreamStatusResponse:
 	"""Возвращает статус текущего стрима стримера.
 
 	Если стрим не запущен — `is_live: false`, остальные поля `null`.
+
+	Args:
+		request_user: Текущий аутентифицированный пользователь (DI).
+		stream_service: Сервис стрима (DI).
 
 	Returns:
 		StreamStatusResponse: Статус стрима, ID сессии и URL виджета.
@@ -116,10 +127,10 @@ async def stream_status(
 		401: Пользователь не аутентифицирован.
 		403: Доступно только стримерам.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("GET /stream/status")
 
-	active = await stream_service.get_status(user)
+	active = await stream_service.get_status(request_user)
 
 	if active is None:
 		return stream_schema.StreamStatusResponse(
