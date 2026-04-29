@@ -71,8 +71,9 @@ class DonationService:
 			log.error("stream not active")
 			raise StreamNotActiveError()
 
+		# Быстрый фейл на стейл-данных — не ходим в БД если баланс заведомо мал
 		if user.balance < amount:
-			log.error("insufficient balance", user_balance=user.balance)
+			log.error("insufficient balance (stale check)", user_balance=user.balance)
 			raise InsufficientBalanceError()
 
 		if message:
@@ -98,7 +99,14 @@ class DonationService:
 		)
 		log.info("donation created", donation_id=donation.id)
 
-		await sql.users_repo.update_balance(self._session, user.telegram_id, user.balance - amount)
+		# Атомарный декремент: списываем только если balance >= amount прямо сейчас
+		new_viewer_balance = await sql.users_repo.decrement_balance(
+			self._session, user.telegram_id, amount,
+		)
+		if new_viewer_balance is None:
+			log.error("insufficient balance (atomic check)", user_balance=user.balance)
+			raise InsufficientBalanceError()
+
 		await sql.balance_transactions_repo.create(
 			self._session,
 			BalanceTransactionCreateDTO(
@@ -109,7 +117,7 @@ class DonationService:
 			),
 		)
 
-		await sql.users_repo.update_balance(self._session, streamer_id, streamer.balance + amount)
+		await sql.users_repo.increment_balance(self._session, streamer_id, amount)
 		await sql.balance_transactions_repo.create(
 			self._session,
 			BalanceTransactionCreateDTO(
