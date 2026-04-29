@@ -21,7 +21,7 @@ logger = get_logger().bind(layer="endpoint", module="donations")
 async def send_donation(
 	body: donations_schema.DonationBody,
 	donation_service: FromDishka[DonationService],
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 ) -> donations_schema.DonationCreateResponse:
 	"""Отправляет донат стримеру от имени зрителя.
 
@@ -31,6 +31,8 @@ async def send_donation(
 
 	Args:
 		body: ID стримера, сумма (1–10 000 монет) и опциональное сообщение (до 500 символов).
+		request_user: Текущий аутентифицированный пользователь (DI).
+		donation_service: Сервис донатов (DI).
 
 	Returns:
 		DonationCreateResponse: ID доната и статус `processing`.
@@ -43,14 +45,14 @@ async def send_donation(
 		422: Сообщение не прошло модерацию (токсичность или стоп-слово стримера).
 	"""
 	log = logger.bind(
-		request_user_id=user.telegram_id,
+		request_user_id=request_user.telegram_id,
 		request_streamer_id=body.streamer_id,
 		request_amount=body.amount,
 		request_message_length=len(body.message) if body.message else 0,
 	)
 	log.debug("POST /donations")
 	donation = await donation_service.send(
-		user=user,
+		user=request_user,
 		streamer_id=body.streamer_id,
 		amount=body.amount,
 		message=body.message,
@@ -67,12 +69,16 @@ async def send_donation(
 @inject
 async def get_session_stats(
 	donation_service: FromDishka[DonationService],
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 ) -> donations_schema.SessionStatsResponse:
 	"""Возвращает статистику донатов текущей активной сессии стрима.
 
 	Включает общую сумму, количество донатов, топ-донатера
 	и поминутную динамику для графика.
+
+	Args:
+		request_user: Текущий аутентифицированный пользователь (DI).
+		donation_service: Сервис донатов (DI).
 
 	Returns:
 		SessionStatsResponse: Статистика активной сессии.
@@ -82,9 +88,9 @@ async def get_session_stats(
 		403: Доступно только стримерам.
 		404: Нет активного стрима.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("GET /donations/session")
-	stats = await donation_service.get_session_stats(user)
+	stats = await donation_service.get_session_stats(request_user)
 	log.debug("session stats retrieved", session_id=stats.session_id, donations_count=stats.donations_count)
 	return donations_schema.SessionStatsResponse(
 		session_id=stats.session_id,
@@ -111,7 +117,7 @@ async def get_history(
 	filters: Annotated[donations_schema.DonationHistoryFilters, Depends()],
 	donation_service: FromDishka[DonationService],
 	s3: FromDishka[S3Manager],
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 ) -> donations_schema.DonationHistoryResponse:
 	"""Возвращает постраничную историю донатов текущего пользователя.
 
@@ -120,6 +126,9 @@ async def get_history(
 
 	Args:
 		filters: Фильтр по направлению (`sent` | `received`) и параметры пагинации.
+		request_user: Текущий аутентифицированный пользователь (DI).
+		donation_service: Сервис донатов (DI).
+		s3: S3-клиент для генерации presigned URL (DI).
 
 	Returns:
 		DonationHistoryResponse: Список донатов с медиа-ссылками и пагинацией.
@@ -128,14 +137,14 @@ async def get_history(
 		401: Пользователь не аутентифицирован.
 	"""
 	log = logger.bind(
-		request_user_id=user.telegram_id,
+		request_user_id=request_user.telegram_id,
 		request_type_filter=filters.type,
 		request_limit=filters.limit,
 		request_offset=filters.offset,
 	)
 	log.debug("GET /donations/history")
 	items, total = await donation_service.get_history(
-		user=user,
+		user=request_user,
 		type_filter=filters.type,
 		limit=filters.limit,
 		offset=filters.offset,
