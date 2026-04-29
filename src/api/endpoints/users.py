@@ -162,7 +162,7 @@ async def get_streamers(
         )
 
     streamer_ids = [s.telegram_id for s in streamers]
-    goals = await sql.stream_goals_repo.get_by_streamer_ids(session, streamer_ids)
+    goals = await sql.stream_goals_repo.get_by_ids(session, streamer_ids)
     goal_map = {g.streamer_id: g for g in goals}
 
     items = [
