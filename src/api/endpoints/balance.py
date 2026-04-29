@@ -13,8 +13,11 @@ logger = get_logger().bind(layer="endpoint", module="balance")
 
 @router.get("", response_model=balance_schema.BalanceResponse, summary="Текущий баланс пользователя")
 @inject
-async def get_balance(user: CurrentUserDep) -> balance_schema.BalanceResponse:
+async def get_balance(request_user: CurrentUserDep) -> balance_schema.BalanceResponse:
 	"""Возвращает текущий баланс аутентифицированного пользователя.
+
+	Args:
+		request_user: Текущий аутентифицированный пользователь (DI).
 
 	Returns:
 		BalanceResponse: Баланс в монетах.
@@ -22,9 +25,9 @@ async def get_balance(user: CurrentUserDep) -> balance_schema.BalanceResponse:
 	Raises:
 		401: Пользователь не аутентифицирован.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
-	log.debug("GET /balance", balance=user.balance)
-	return balance_schema.BalanceResponse(balance=user.balance)
+	log = logger.bind(request_user_id=request_user.telegram_id)
+	log.debug("GET /balance", balance=request_user.balance)
+	return balance_schema.BalanceResponse(balance=request_user.balance)
 
 
 @router.post("/topup", response_model=balance_schema.TopupResponse, summary="Пополнить баланс монетами")
@@ -32,12 +35,14 @@ async def get_balance(user: CurrentUserDep) -> balance_schema.BalanceResponse:
 async def topup(
 	body: balance_schema.TopupBody,
 	balance_service: FromDishka[BalanceService],
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 ) -> balance_schema.TopupResponse:
 	"""Пополняет баланс пользователя на указанное количество монет.
 
 	Args:
 		body: Количество монет для зачисления (от 1 до 100 000).
+		request_user: Текущий аутентифицированный пользователь (DI).
+		balance_service: Сервис баланса (DI).
 
 	Returns:
 		TopupResponse: Баланс до, сумма зачисления и новый баланс.
@@ -46,10 +51,10 @@ async def topup(
 		401: Пользователь не аутентифицирован.
 		422: Некорректная сумма (ноль или отрицательное значение).
 	"""
-	log = logger.bind(request_user_id=user.telegram_id, request_amount=body.amount)
+	log = logger.bind(request_user_id=request_user.telegram_id, request_amount=body.amount)
 	log.debug("POST /balance/topup")
 
-	previous_balance, new_balance = await balance_service.topup(user, body.amount)
+	previous_balance, new_balance = await balance_service.topup(request_user, body.amount)
 
 	log.info("topup success", previous_balance=previous_balance, new_balance=new_balance)
 	return balance_schema.TopupResponse(
