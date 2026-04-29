@@ -32,12 +32,27 @@ _DEFAULT_ALERT_STYLE = AlertSettingsDTO(
 )
 
 
-@router.get("/{stream_token}", response_model=WidgetResponse)
+@router.get("/{stream_token}", response_model=WidgetResponse, summary="Данные виджета для OBS Browser Source")
 @inject
 async def get_widget(
 	stream_token: str,
 	session: FromDishka[AsyncSession],
 ) -> WidgetResponse:
+	"""Возвращает конфигурацию виджета для OBS Browser Source. Эндпоинт публичный.
+
+	Используется фронтендом виджета при инициализации для получения
+	настроек алерта и WebSocket URL. Токен стрима является секретом —
+	его знает только стример и его браузерный источник.
+
+	Args:
+		stream_token: Уникальный токен активного стрима из `POST /stream/start`.
+
+	Returns:
+		WidgetResponse: Данные стримера, стиль алерта и WebSocket URL.
+
+	Raises:
+		404: Стрим не найден или уже завершён.
+	"""
 	log = logger.bind(stream_token=stream_token)
 	log.debug("GET /widget/{stream_token}")
 
