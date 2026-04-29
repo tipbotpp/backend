@@ -27,8 +27,11 @@ _VIEWER_START_BALANCE = 100
 
 @router.get("/me", response_model=users_schema.UserResponse, summary="Профиль текущего пользователя")
 @inject
-async def get_me(user: CurrentUserDep) -> users_schema.UserResponse:
+async def get_me(request_user: CurrentUserDep) -> users_schema.UserResponse:
     """Возвращает полный профиль аутентифицированного пользователя.
+
+    Args:
+        request_user: Текущий аутентифицированный пользователь (DI).
 
     Returns:
         UserResponse: Профиль с ролью, балансом и датой регистрации.
@@ -36,17 +39,17 @@ async def get_me(user: CurrentUserDep) -> users_schema.UserResponse:
     Raises:
         401: Пользователь не аутентифицирован.
     """
-    log = logger.bind(request_user_id=user.telegram_id)
-    log.debug("GET /users/me", role=user.role)
-    return map_model(user, users_schema.UserResponse)
+    log = logger.bind(request_user_id=request_user.telegram_id)
+    log.debug("GET /users/me", role=request_user.role)
+    return map_model(request_user, users_schema.UserResponse)
 
 
 @router.patch("/me", response_model=users_schema.UserResponse, summary="Обновить профиль (имя, описание)")
 @inject
 async def update_me(
     body: users_schema.UserUpdateBody,
-    session: FromDishka[AsyncSession],
-    user: CurrentUserDep,
+    request_db_session: FromDishka[AsyncSession],
+    request_user: CurrentUserDep,
 ) -> users_schema.UserResponse:
     """Обновляет отображаемое имя и/или описание профиля.
 
@@ -56,6 +59,8 @@ async def update_me(
 
     Args:
         body: Новое отображаемое имя (до 64 символов) и/или описание (до 500 символов).
+        request_user: Текущий аутентифицированный пользователь (DI).
+        request_db_session: Сессия базы данных (DI).
 
     Returns:
         UserResponse: Обновлённый профиль.
@@ -64,11 +69,11 @@ async def update_me(
         401: Пользователь не аутентифицирован.
         422: Превышена максимальная длина поля.
     """
-    log = logger.bind(request_user_id=user.telegram_id)
+    log = logger.bind(request_user_id=request_user.telegram_id)
     log.debug("PATCH /users/me")
     updated = await sql.users_repo.update_profile_custom(
-        session,
-        user.telegram_id,
+        request_db_session,
+        request_user.telegram_id,
         display_name=body.display_name,
         description=body.description,
     )
@@ -80,8 +85,8 @@ async def update_me(
 @inject
 async def set_role(
     body: users_schema.UserRoleBody,
-    session: FromDishka[AsyncSession],
-    user: CurrentUserDep,
+    request_db_session: FromDishka[AsyncSession],
+    request_user: CurrentUserDep,
 ) -> users_schema.UserRoleResponse:
     """Устанавливает роль пользователя. Вызывается ровно один раз после регистрации.
 
@@ -90,6 +95,8 @@ async def set_role(
 
     Args:
         body: Желаемая роль: `viewer` или `streamer`.
+        request_user: Текущий аутентифицированный пользователь (DI).
+        request_db_session: Сессия базы данных (DI).
 
     Returns:
         UserRoleResponse: Установленная роль и актуальный баланс.
@@ -99,11 +106,11 @@ async def set_role(
         409: Роль уже установлена ранее.
         422: Неизвестное значение роли (допустимо только viewer | streamer).
     """
-    log = logger.bind(request_user_id=user.telegram_id, request_role=body.role)
+    log = logger.bind(request_user_id=request_user.telegram_id, request_role=body.role)
     log.debug("PATCH /users/me/role")
 
-    if user.role is not None:
-        log.error("role already set", current_role=user.role)
+    if request_user.role is not None:
+        log.error("role already set", current_role=request_user.role)
         raise RoleAlreadySetError
 
     try:
@@ -115,9 +122,9 @@ async def set_role(
     new_balance = _VIEWER_START_BALANCE if role is UserRole.VIEWER else None
 
     updated = await sql.users_repo.update_role(
-        session,
-        user.telegram_id,
-        role.value,
+        request_db_session,
+        request_user.telegram_id,
+        str(role.value),
         balance=new_balance,
     )
 
@@ -129,8 +136,8 @@ async def set_role(
 @inject
 async def get_streamers(
     filters: Annotated[users_schema.StreamerFilters, Depends()],
-    session: FromDishka[AsyncSession],
-    user: CurrentUserDep,
+    request_db_session: FromDishka[AsyncSession],
+    request_user: CurrentUserDep,
 ) -> users_schema.StreamerListResponse:
     """Возвращает постраничный список стримеров, у которых прямо сейчас идёт стрим.
 
@@ -139,6 +146,8 @@ async def get_streamers(
 
     Args:
         filters: Параметры поиска и пагинации (search, limit, offset).
+        request_user: Текущий аутентифицированный пользователь (DI).
+        request_db_session: Сессия базы данных (DI).
 
     Returns:
         StreamerListResponse: Список стримеров с пагинацией.
@@ -146,11 +155,11 @@ async def get_streamers(
     Raises:
         401: Пользователь не аутентифицирован.
     """
-    log = logger.bind(request_user_id=user.telegram_id, request_search=filters.search)
+    log = logger.bind(request_user_id=request_user.telegram_id, request_search=filters.search)
     log.debug("GET /users/streamers")
 
     streamers, total = await sql.users_repo.get_active_streamers(
-        session,
+        request_db_session,
         search=filters.search,
         limit=filters.limit,
         offset=filters.offset,
@@ -162,7 +171,7 @@ async def get_streamers(
         )
 
     streamer_ids = [s.telegram_id for s in streamers]
-    goals = await sql.stream_goals_repo.get_by_ids(session, streamer_ids)
+    goals = await sql.stream_goals_repo.get_by_ids(request_db_session, streamer_ids)
     goal_map = {g.streamer_id: g for g in goals}
 
     items = [
@@ -194,8 +203,8 @@ async def get_streamers(
 @inject
 async def get_streamer_profile(
     user_id: int,
-    session: FromDishka[AsyncSession],
-    user: CurrentUserDep,
+    request_db_session: FromDishka[AsyncSession],
+    request_user: CurrentUserDep,
 ) -> users_schema.StreamerProfileResponse:
     """Возвращает публичный профиль пользователя по его Telegram ID.
 
@@ -204,6 +213,8 @@ async def get_streamer_profile(
 
     Args:
         user_id: Telegram ID пользователя.
+        request_user: Текущий аутентифицированный пользователь (DI).
+        request_db_session: Сессия базы данных (DI).
 
     Returns:
         StreamerProfileResponse: Публичный профиль с целью и превью алерта.
@@ -212,18 +223,18 @@ async def get_streamer_profile(
         401: Пользователь не аутентифицирован.
         404: Пользователь с указанным ID не найден.
     """
-    log = logger.bind(request_user_id=user.telegram_id, target_user_id=user_id)
+    log = logger.bind(request_user_id=request_user.telegram_id, target_user_id=user_id)
     log.debug("GET /users/{user_id}")
 
-    target = await sql.users_repo.get_by_telegram_id(session, user_id)
+    target = await sql.users_repo.get_by_telegram_id(request_db_session, user_id)
     if target is None:
         raise NotFoundError()
 
-    active_session = await sql.stream_sessions_repo.get_active_by_streamer_id(session, user_id)
+    active_session = await sql.stream_sessions_repo.get_active_by_streamer_id(request_db_session, user_id)
     is_live = active_session is not None
 
-    goal = await sql.stream_goals_repo.get_by_streamer_id(session, user_id)
-    alert = await sql.alert_settings_repo.get_by_streamer_id(session, user_id)
+    goal = await sql.stream_goals_repo.get_by_streamer_id(request_db_session, user_id)
+    alert = await sql.alert_settings_repo.get_by_streamer_id(request_db_session, user_id)
 
     log.info("streamer profile retrieved", is_live=is_live)
     return users_schema.StreamerProfileResponse(
