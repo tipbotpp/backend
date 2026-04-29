@@ -16,13 +16,32 @@ router = APIRouter(prefix="/donations", route_class=DishkaRoute)
 logger = get_logger().bind(layer="endpoint", module="donations")
 
 
-@router.post("", response_model=donations_schema.DonationCreateResponse, status_code=201)
+@router.post("", response_model=donations_schema.DonationCreateResponse, status_code=201, summary="Отправить донат стримеру")
 @inject
 async def send_donation(
 	body: donations_schema.DonationBody,
 	donation_service: FromDishka[DonationService],
 	user: CurrentUserDep,
 ) -> donations_schema.DonationCreateResponse:
+	"""Отправляет донат стримеру от имени зрителя.
+
+	Списывает монеты с баланса, запускает модерацию текста,
+	ставит задачи на TTS-озвучку и генерацию изображения в очередь.
+	Алерт появится в OBS-виджете после завершения обработки.
+
+	Args:
+		body: ID стримера, сумма (1–10 000 монет) и опциональное сообщение (до 500 символов).
+
+	Returns:
+		DonationCreateResponse: ID доната и статус `processing`.
+
+	Raises:
+		401: Пользователь не аутентифицирован.
+		402: Недостаточно монет на балансе.
+		403: Только зрители могут отправлять донаты; нельзя донатить самому себе.
+		404: Стример не найден или у него нет активного стрима.
+		422: Сообщение не прошло модерацию (токсичность или стоп-слово стримера).
+	"""
 	log = logger.bind(
 		request_user_id=user.telegram_id,
 		request_streamer_id=body.streamer_id,
@@ -44,12 +63,25 @@ async def send_donation(
 	)
 
 
-@router.get("/session", response_model=donations_schema.SessionStatsResponse)
+@router.get("/session", response_model=donations_schema.SessionStatsResponse, summary="Статистика текущей сессии стримера")
 @inject
 async def get_session_stats(
 	donation_service: FromDishka[DonationService],
 	user: CurrentUserDep,
 ) -> donations_schema.SessionStatsResponse:
+	"""Возвращает статистику донатов текущей активной сессии стрима.
+
+	Включает общую сумму, количество донатов, топ-донатера
+	и поминутную динамику для графика.
+
+	Returns:
+		SessionStatsResponse: Статистика активной сессии.
+
+	Raises:
+		401: Пользователь не аутентифицирован.
+		403: Доступно только стримерам.
+		404: Нет активного стрима.
+	"""
 	log = logger.bind(request_user_id=user.telegram_id)
 	log.debug("GET /donations/session")
 	stats = await donation_service.get_session_stats(user)
@@ -73,7 +105,7 @@ async def get_session_stats(
 	)
 
 
-@router.get("/history", response_model=donations_schema.DonationHistoryResponse)
+@router.get("/history", response_model=donations_schema.DonationHistoryResponse, summary="История донатов пользователя")
 @inject
 async def get_history(
 	filters: Annotated[donations_schema.DonationHistoryFilters, Depends()],
@@ -81,6 +113,20 @@ async def get_history(
 	s3: FromDishka[S3Manager],
 	user: CurrentUserDep,
 ) -> donations_schema.DonationHistoryResponse:
+	"""Возвращает постраничную историю донатов текущего пользователя.
+
+	Для каждого доната генерируются временные presigned URL на аудио и изображение
+	из MinIO (действительны ограниченное время).
+
+	Args:
+		filters: Фильтр по направлению (`sent` | `received`) и параметры пагинации.
+
+	Returns:
+		DonationHistoryResponse: Список донатов с медиа-ссылками и пагинацией.
+
+	Raises:
+		401: Пользователь не аутентифицирован.
+	"""
 	log = logger.bind(
 		request_user_id=user.telegram_id,
 		request_type_filter=filters.type,
