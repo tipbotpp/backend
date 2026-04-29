@@ -36,7 +36,7 @@ _DEFAULT_ALERT_STYLE = AlertSettingsDTO(
 @inject
 async def get_widget(
 	stream_token: str,
-	session: FromDishka[AsyncSession],
+	request_db_session: FromDishka[AsyncSession],
 ) -> WidgetResponse:
 	"""Возвращает конфигурацию виджета для OBS Browser Source. Эндпоинт публичный.
 
@@ -46,6 +46,7 @@ async def get_widget(
 
 	Args:
 		stream_token: Уникальный токен активного стрима из `POST /stream/start`.
+		request_db_session: Сессия базы данных (DI).
 
 	Returns:
 		WidgetResponse: Данные стримера, стиль алерта и WebSocket URL.
@@ -56,17 +57,17 @@ async def get_widget(
 	log = logger.bind(stream_token=stream_token)
 	log.debug("GET /widget/{stream_token}")
 
-	stream_session = await sql.stream_sessions_repo.get_by_stream_token(session, stream_token)
+	stream_session = await sql.stream_sessions_repo.get_by_stream_token(request_db_session, stream_token)
 	if stream_session is None or not stream_session.is_active:
 		log.error("widget: stream not found or inactive")
 		raise NotFoundError()
 
-	streamer = await sql.users_repo.get_by_telegram_id(session, stream_session.streamer_id)
+	streamer = await sql.users_repo.get_by_telegram_id(request_db_session, stream_session.streamer_id)
 	if streamer is None:
 		log.error("widget: streamer not found")
 		raise NotFoundError()
 
-	alert = await sql.alert_settings_repo.get_by_streamer_id(session, stream_session.streamer_id)
+	alert = await sql.alert_settings_repo.get_by_streamer_id(request_db_session, stream_session.streamer_id)
 	style = alert or _DEFAULT_ALERT_STYLE
 
 	log.info("widget served", session_id=stream_session.id)
