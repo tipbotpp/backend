@@ -18,12 +18,16 @@ logger = get_logger().bind(layer="endpoint", module="settings")
 @router.get("/alert", response_model=settings_schema.AlertSettingsResponse, summary="Настройки алерта стримера")
 @inject
 async def get_alert(
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 	settings_service: FromDishka[SettingsService],
 ) -> settings_schema.AlertSettingsResponse:
 	"""Возвращает текущие настройки OBS-алерта стримера.
 
 	Если настройки ещё не созданы — автоматически создаются со значениями по умолчанию.
+
+	Args:
+		request_user: Текущий аутентифицированный пользователь (DI).
+		settings_service: Сервис настроек (DI).
 
 	Returns:
 		AlertSettingsResponse: Цвета, шрифт, длительность и флаги TTS/изображения.
@@ -32,9 +36,9 @@ async def get_alert(
 		401: Пользователь не аутентифицирован.
 		403: Доступно только стримерам.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("GET /settings/alert")
-	result = await settings_service.get_alert(user)
+	result = await settings_service.get_alert(request_user)
 	return settings_schema.AlertSettingsResponse(
 		bg_color=result.bg_color,
 		text_color=result.text_color,
@@ -50,7 +54,7 @@ async def get_alert(
 @inject
 async def update_alert(
 	body: settings_schema.AlertSettingsBody,
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 	settings_service: FromDishka[SettingsService],
 ) -> settings_schema.AlertSettingsResponse:
 	"""Обновляет настройки OBS-алерта. Все поля опциональны — меняй только нужные.
@@ -59,6 +63,8 @@ async def update_alert(
 
 	Args:
 		body: Частичное обновление настроек алерта (цвета, шрифт, длительность, TTS, изображение).
+		request_user: Текущий аутентифицированный пользователь (DI).
+		settings_service: Сервис настроек (DI).
 
 	Returns:
 		AlertSettingsResponse: Полные актуальные настройки после обновления.
@@ -68,10 +74,10 @@ async def update_alert(
 		403: Доступно только стримерам.
 		422: Неверный формат цвета или значение вне допустимого диапазона.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("PATCH /settings/alert")
 	result = await settings_service.update_alert(
-		user,
+		request_user,
 		bg_color=body.bg_color,
 		text_color=body.text_color,
 		font=body.font,
@@ -100,13 +106,17 @@ async def update_alert(
 )
 @inject
 async def test_alert(
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 	settings_service: FromDishka[SettingsService],
 ) -> settings_schema.AlertTestResponse:
 	"""Отправляет тестовый алерт в OBS-виджет с текущими настройками стиля.
 
 	Используется для предпросмотра внешнего вида алерта без реального доната.
 	Требует активного стрима — виджет должен быть подключён к WebSocket.
+
+	Args:
+		request_user: Текущий аутентифицированный пользователь (DI).
+		settings_service: Сервис настроек (DI).
 
 	Returns:
 		AlertTestResponse: Подтверждение отправки.
@@ -116,9 +126,9 @@ async def test_alert(
 		403: Доступно только стримерам.
 		404: Нет активного стрима (виджет не подключён).
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("POST /settings/alert/test")
-	await settings_service.test_alert(user)
+	await settings_service.test_alert(request_user)
 	log.info("test alert sent")
 	return settings_schema.AlertTestResponse(
 		status="sent",
@@ -131,13 +141,17 @@ async def test_alert(
 @router.get("/goal", response_model=settings_schema.GoalResponse, summary="Цель сбора стримера")
 @inject
 async def get_goal(
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 	settings_service: FromDishka[SettingsService],
 ) -> settings_schema.GoalResponse:
 	"""Возвращает текущую цель сбора стримера.
 
 	Если цель ещё не задана — автоматически создаётся со значениями по умолчанию.
 	`current_amount` обновляется автоматически при каждом донате.
+
+	Args:
+		request_user: Текущий аутентифицированный пользователь (DI).
+		settings_service: Сервис настроек (DI).
 
 	Returns:
 		GoalResponse: Название, целевая и текущая суммы.
@@ -146,9 +160,9 @@ async def get_goal(
 		401: Пользователь не аутентифицирован.
 		403: Доступно только стримерам.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("GET /settings/goal")
-	result = await settings_service.get_goal(user)
+	result = await settings_service.get_goal(request_user)
 	return settings_schema.GoalResponse(
 		title=result.title,
 		target_amount=result.target_amount,
@@ -160,13 +174,15 @@ async def get_goal(
 @inject
 async def update_goal(
 	body: settings_schema.GoalBody,
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 	settings_service: FromDishka[SettingsService],
 ) -> settings_schema.GoalResponse:
 	"""Обновляет название и/или целевую сумму цели сбора. Все поля опциональны.
 
 	Args:
 		body: Новое название (до 128 символов) и/или целевая сумма (1–1 000 000 монет).
+		request_user: Текущий аутентифицированный пользователь (DI).
+		settings_service: Сервис настроек (DI).
 
 	Returns:
 		GoalResponse: Актуальная цель после обновления.
@@ -176,10 +192,10 @@ async def update_goal(
 		403: Доступно только стримерам.
 		422: Пустое название или целевая сумма вне допустимого диапазона.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("PATCH /settings/goal")
 	result = await settings_service.update_goal(
-		user,
+		request_user,
 		title=body.title,
 		target_amount=body.target_amount,
 	)
@@ -196,13 +212,17 @@ async def update_goal(
 @router.get("/stopwords", response_model=list[settings_schema.StopWordResponse], summary="Список стоп-слов стримера")
 @inject
 async def get_stopwords(
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 	settings_service: FromDishka[SettingsService],
 ) -> list[settings_schema.StopWordResponse]:
 	"""Возвращает все стоп-слова стримера.
 
 	Сообщения донатов, содержащие стоп-слово, отклоняются на этапе модерации.
 	Слова хранятся в нижнем регистре.
+
+	Args:
+		request_user: Текущий аутентифицированный пользователь (DI).
+		settings_service: Сервис настроек (DI).
 
 	Returns:
 		list[StopWordResponse]: Список стоп-слов с их ID.
@@ -211,9 +231,9 @@ async def get_stopwords(
 		401: Пользователь не аутентифицирован.
 		403: Доступно только стримерам.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("GET /settings/stopwords")
-	words = await settings_service.get_stopwords(user)
+	words = await settings_service.get_stopwords(request_user)
 	return [settings_schema.StopWordResponse(id=w.id, word=w.word) for w in words]
 
 
@@ -226,13 +246,15 @@ async def get_stopwords(
 @inject
 async def add_stopword(
 	body: settings_schema.StopWordBody,
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 	settings_service: FromDishka[SettingsService],
 ) -> settings_schema.StopWordResponse:
 	"""Добавляет новое стоп-слово. Слово приводится к нижнему регистру автоматически.
 
 	Args:
 		body: Слово для блокировки (до 64 символов, регистр не важен).
+		request_user: Текущий аутентифицированный пользователь (DI).
+		settings_service: Сервис настроек (DI).
 
 	Returns:
 		StopWordResponse: Созданное стоп-слово с присвоенным ID.
@@ -243,9 +265,9 @@ async def add_stopword(
 		409: Такое стоп-слово уже существует.
 		422: Пустая строка.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("POST /settings/stopwords")
-	word = await settings_service.add_stopword(user, body.word)
+	word = await settings_service.add_stopword(request_user, body.word)
 	log.info("stopword added", word_id=word.id)
 	return settings_schema.StopWordResponse(id=word.id, word=word.word)
 
@@ -254,22 +276,24 @@ async def add_stopword(
 @inject
 async def delete_stopword(
 	word_id: int,
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 	settings_service: FromDishka[SettingsService],
 ) -> None:
 	"""Удаляет стоп-слово по ID. Ответ — 204 No Content.
 
 	Args:
 		word_id: ID стоп-слова из `GET /settings/stopwords`.
+		request_user: Текущий аутентифицированный пользователь (DI).
+		settings_service: Сервис настроек (DI).
 
 	Raises:
 		401: Пользователь не аутентифицирован.
 		403: Стоп-слово принадлежит другому стримеру.
 		404: Стоп-слово с таким ID не найдено.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id, word_id=word_id)
+	log = logger.bind(request_user_id=request_user.telegram_id, word_id=word_id)
 	log.debug("DELETE /settings/stopwords/{word_id}")
-	await settings_service.delete_stopword(user, word_id)
+	await settings_service.delete_stopword(request_user, word_id)
 	log.info("stopword deleted")
 
 
@@ -278,13 +302,17 @@ async def delete_stopword(
 @router.get("/passive-income", response_model=settings_schema.PassiveIncomeResponse, summary="Настройки пассивного дохода")
 @inject
 async def get_passive_income(
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 	settings_service: FromDishka[SettingsService],
 ) -> settings_schema.PassiveIncomeResponse:
 	"""Возвращает настройки пассивного дохода стримера.
 
 	Пассивный доход — автоматическое начисление монет зрителям, подключённым
 	к стриму через Mini App. Управляется cron-тасом воркера.
+
+	Args:
+		request_user: Текущий аутентифицированный пользователь (DI).
+		settings_service: Сервис настроек (DI).
 
 	Returns:
 		PassiveIncomeResponse: Статус включения, монеты за интервал и интервал в минутах.
@@ -293,9 +321,9 @@ async def get_passive_income(
 		401: Пользователь не аутентифицирован.
 		403: Доступно только стримерам.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("GET /settings/passive-income")
-	result = await settings_service.get_passive_income(user)
+	result = await settings_service.get_passive_income(request_user)
 	return settings_schema.PassiveIncomeResponse(
 		enabled=result.enabled,
 		coins_per_interval=result.coins_per_interval,
@@ -307,7 +335,7 @@ async def get_passive_income(
 @inject
 async def update_passive_income(
 	body: settings_schema.PassiveIncomeBody,
-	user: CurrentUserDep,
+	request_user: CurrentUserDep,
 	settings_service: FromDishka[SettingsService],
 ) -> settings_schema.PassiveIncomeResponse:
 	"""Обновляет настройки пассивного дохода. Все поля опциональны.
@@ -316,6 +344,8 @@ async def update_passive_income(
 
 	Args:
 		body: Флаг включения, монеты за интервал (1–1000) и интервал в минутах (1–60).
+		request_user: Текущий аутентифицированный пользователь (DI).
+		settings_service: Сервис настроек (DI).
 
 	Returns:
 		PassiveIncomeResponse: Актуальные настройки после обновления.
@@ -325,10 +355,10 @@ async def update_passive_income(
 		403: Доступно только стримерам.
 		422: Значения монет или интервала вне допустимого диапазона.
 	"""
-	log = logger.bind(request_user_id=user.telegram_id)
+	log = logger.bind(request_user_id=request_user.telegram_id)
 	log.debug("PATCH /settings/passive-income")
 	result = await settings_service.update_passive_income(
-		user,
+		request_user,
 		enabled=body.enabled,
 		coins_per_interval=body.coins_per_interval,
 		interval_minutes=body.interval_minutes,
