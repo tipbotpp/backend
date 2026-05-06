@@ -1,5 +1,4 @@
 """Жизненный цикл приложения"""
-
 import asyncio
 import contextlib
 from collections.abc import AsyncIterator
@@ -28,10 +27,7 @@ logger: AbstractLogger = get_logger()
 
 async def _ensure_dev_user(session_factory: async_sessionmaker) -> None:
 	async with session_factory() as session:
-		existing = await sql.users_repo.get_by_telegram_id(
-			session,
-			cfg.dev.telegram_id,
-		)
+		existing = await sql.users_repo.get_by_telegram_id(session, cfg.dev.telegram_id)
 		if existing is None:
 			await sql.users_repo.create(
 				session,
@@ -44,10 +40,7 @@ async def _ensure_dev_user(session_factory: async_sessionmaker) -> None:
 			await session.commit()
 			logger.info("Dev user created", telegram_id=cfg.dev.telegram_id)
 		else:
-			logger.info(
-				"Dev user already exists",
-				telegram_id=cfg.dev.telegram_id,
-			)
+			logger.info("Dev user already exists", telegram_id=cfg.dev.telegram_id)
 
 
 @asynccontextmanager
@@ -66,10 +59,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 		await _ensure_dev_user(session_factory)
 
 	# ========== Bot ==========
-	bot = Bot(
-		token=cfg.bot.token,
-		default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-	)
+	bot = Bot(token=cfg.bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 	dp = Dispatcher()
 
 	dp.update.outer_middleware(LoggingMiddleware())
@@ -81,10 +71,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 	setup_dishka_aiogram(container=container, router=dp)
 
 	polling_task = asyncio.create_task(
-		dp.start_polling(
-			bot,
-			drop_pending_updates=cfg.bot.drop_pending_updates,
-		),
+		dp.start_polling(bot, drop_pending_updates=cfg.bot.drop_pending_updates),
 	)
 	logger.info("Bot started")
 

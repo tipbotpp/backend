@@ -12,7 +12,6 @@
      отправляет new_alert + goal_updated в WebSocket.
   5. Получив control event (stream_stopped, test_alert) — форвардит в WebSocket.
 """
-
 from __future__ import annotations
 
 import asyncio
@@ -52,24 +51,15 @@ async def ws_obs_widget(
 	# ── Валидация токена ─────────────────────────────────────────────────────
 	async with session_factory() as session:
 		async with session.begin():
-			stream_session = (
-				await sql.stream_sessions_repo.get_by_stream_token(
-					session,
-					stream_token,
-				)
-			)
+			stream_session = await sql.stream_sessions_repo.get_by_stream_token(session, stream_token)
 			if stream_session is None or not stream_session.is_active:
 				log.error("ws invalid or inactive stream token")
 				await websocket.close(code=4004)
 				return
-			streamer = await sql.users_repo.get_by_telegram_id(
-				session,
-				stream_session.streamer_id,
-			)
+			streamer = await sql.users_repo.get_by_telegram_id(session, stream_session.streamer_id)
 			streamer_name = (
 				streamer.display_name or streamer.username or "Стример"
-				if streamer
-				else "Стример"
+				if streamer else "Стример"
 			)
 			session_id = stream_session.id
 			streamer_id = stream_session.streamer_id
@@ -81,35 +71,23 @@ async def ws_obs_widget(
 	try:
 		first = await asyncio.wait_for(websocket.receive_json(), timeout=10.0)
 		if isinstance(first, dict) and first.get("type") == "ready":
-			await websocket.send_json(
-				{
-					"type": "connected",
-					"streamer": streamer_name,
-					"session_id": session_id,
-				},
-			)
-			log.debug("ws connected sent")
-	except (TimeoutError, Exception):
-		await websocket.send_json(
-			{
+			await websocket.send_json({
 				"type": "connected",
 				"streamer": streamer_name,
 				"session_id": session_id,
-			},
-		)
+			})
+			log.debug("ws connected sent")
+	except (TimeoutError, Exception):
+		await websocket.send_json({
+			"type": "connected",
+			"streamer": streamer_name,
+			"session_id": session_id,
+		})
 
 	# ── Два параллельных цикла ────────────────────────────────────────────────
 	t_client = asyncio.create_task(_client_loop(websocket, log))
 	t_queue = asyncio.create_task(
-		_queue_loop(
-			websocket,
-			arq_pool,
-			s3_manager,
-			session_factory,
-			stream_token,
-			streamer_id,
-			log,
-		),
+		_queue_loop(websocket, arq_pool, s3_manager, session_factory, stream_token, streamer_id, log),
 	)
 
 	try:
@@ -152,11 +130,7 @@ async def _queue_loop(
 ) -> None:
 	"""Читаем события из Redis-очередей: arq job results + control events."""
 	while True:
-		queue_type, value = await ws_queue_repo.pop_next(
-			arq_pool,
-			stream_token,
-			timeout=30,
-		)
+		queue_type, value = await ws_queue_repo.pop_next(arq_pool, stream_token, timeout=30)
 
 		if queue_type is None or value is None:
 			# timeout — продолжаем ждать
@@ -178,10 +152,7 @@ async def _queue_loop(
 		job_id = value
 		try:
 			job = ArqJob(job_id, arq_pool)
-			result: DonationMediaResultDTO = await job.result(
-				timeout=120.0,
-				poll_delay=0.5,
-			)
+			result: DonationMediaResultDTO = await job.result(timeout=120.0, poll_delay=0.5)
 		except Exception as e:
 			log.error("arq job result failed", job_id=job_id, error=str(e))
 			continue
@@ -201,23 +172,21 @@ async def _queue_loop(
 
 		# ── new_alert ─────────────────────────────────────────────────────────
 		try:
-			await websocket.send_json(
-				{
-					"type": "new_alert",
-					"donation_id": result.donation_id,
-					"donor_name": result.donor_name,
-					"amount": result.amount,
-					"message": result.message,
-					"audio_url": audio_url,
-					"image_url": image_url,
-					"style": {
-						"bg_color": result.alert_bg_color,
-						"text_color": result.alert_text_color,
-						"font": result.alert_font,
-						"duration_sec": result.alert_duration_sec,
-					},
+			await websocket.send_json({
+				"type": "new_alert",
+				"donation_id": result.donation_id,
+				"donor_name": result.donor_name,
+				"amount": result.amount,
+				"message": result.message,
+				"audio_url": audio_url,
+				"image_url": image_url,
+				"style": {
+					"bg_color": result.alert_bg_color,
+					"text_color": result.alert_text_color,
+					"font": result.alert_font,
+					"duration_sec": result.alert_duration_sec,
 				},
-			)
+			})
 			log.info("new_alert sent", donation_id=result.donation_id)
 		except Exception as e:
 			log.error("ws send new_alert failed", error=str(e))
@@ -227,22 +196,17 @@ async def _queue_loop(
 		try:
 			async with session_factory() as session:
 				async with session.begin():
-					goal = await sql.stream_goals_repo.get_by_streamer_id(
-						session,
-						streamer_id,
-					)
+					goal = await sql.stream_goals_repo.get_by_streamer_id(session, streamer_id)
 
 			if goal and goal.target_amount > 0:
 				percent = round(goal.current_amount / goal.target_amount * 100)
-				await websocket.send_json(
-					{
-						"type": "goal_updated",
-						"title": goal.title,
-						"target_amount": goal.target_amount,
-						"current_amount": goal.current_amount,
-						"percent": percent,
-					},
-				)
+				await websocket.send_json({
+					"type": "goal_updated",
+					"title": goal.title,
+					"target_amount": goal.target_amount,
+					"current_amount": goal.current_amount,
+					"percent": percent,
+				})
 				log.info("goal_updated sent")
 		except Exception as e:
 			log.error("goal_updated failed", error=str(e))

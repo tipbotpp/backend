@@ -69,7 +69,6 @@ class DonationMediaResultDTO:
 
 	Содержит raw S3 ключи — FastAPI WS handler сам генерирует presigned URLs.
 	"""
-
 	donation_id: int
 	donor_name: str
 	amount: int

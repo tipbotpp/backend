@@ -69,18 +69,15 @@ def configure_logger() -> None:
 	}
 	log_level = allowed_levels.get(log_level, 20)
 	structlog.configure_once(
-		processors=cast(
-			Any,
-			[
-				structlog.contextvars.merge_contextvars,
-				http_context_processor,
-				structlog.processors.add_log_level,
-				structlog.dev.set_exc_info,
-				structlog.processors.TimeStamper(),
-				reorder_keys_processor,
-				structlog.processors.JSONRenderer(),
-			],
-		),
+		processors=cast(Any, [
+			structlog.contextvars.merge_contextvars,
+			http_context_processor,
+			structlog.processors.add_log_level,
+			structlog.dev.set_exc_info,
+			structlog.processors.TimeStamper(),
+			reorder_keys_processor,
+			structlog.processors.JSONRenderer(),
+		]),
 		context_class=dict,
 		logger_factory=structlog.PrintLoggerFactory(),
 		cache_logger_on_first_use=False,
@@ -165,3 +162,4 @@ def get_logger() -> AbstractLogger:
 		configure_logger()
 		_logger_instance = StructLogger()
 	return _logger_instance
+

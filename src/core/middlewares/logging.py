@@ -87,11 +87,7 @@ class LoggingMiddleware(BaseMiddleware):
 		if isinstance(event, Update):
 			if event.message:
 				update_type = "message"
-				user_id = (
-					event.message.from_user.id
-					if event.message.from_user
-					else None
-				)
+				user_id = event.message.from_user.id if event.message.from_user else None
 			elif event.callback_query:
 				update_type = "callback_query"
 				user_id = event.callback_query.from_user.id

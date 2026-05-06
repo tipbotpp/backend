@@ -1,28 +1,24 @@
 import asyncio
-from typing import Any
-
 import pytest
 
 
 @pytest.mark.asyncio
-async def test_concurrent_donations(
-	donation_service: Any,
-	user: Any,
-	streamer: Any,
-) -> None:
-	tasks: list[asyncio.Future[Any]] = []
+async def test_concurrent_donations(donation_service, user, streamer):
 
-	for _ in range(20):
-		tasks.append(
-			donation_service.send(
-				user=user,
-				streamer_id=streamer.telegram_id,
-				amount=10,
-				message="race",
-			),
-		)
+    tasks = []
 
-	results = await asyncio.gather(*tasks, return_exceptions=True)
+    for _ in range(20):
+        tasks.append(
+            donation_service.send(
+                user=user,
+                streamer_id=streamer.telegram_id,
+                amount=10,
+                message="race"
+            )
+        )
 
-	errors = [r for r in results if isinstance(r, Exception)]
-	assert len(errors) == 0
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # не должно быть критических ошибок
+    errors = [r for r in results if isinstance(r, Exception)]
+    assert len(errors) == 0

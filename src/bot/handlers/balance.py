@@ -49,13 +49,9 @@ async def cb_topup_amount(
 
 	from src.schemas.dataclasses.users import UserDTO
 	from src.utils.mappers import map_model
-
 	user_dto = map_model(user, UserDTO)
 
-	_, new_balance = await balance_service.topup(
-		user_dto,
-		callback_data.amount,
-	)
+	_, new_balance = await balance_service.topup(user_dto, callback_data.amount)
 	await msg.answer(
 		BalanceText.topup_success(callback_data.amount, new_balance),
 		reply_markup=kb.after_topup_menu(),
@@ -93,7 +89,6 @@ async def fsm_topup_amount(
 
 	from src.schemas.dataclasses.users import UserDTO
 	from src.utils.mappers import map_model
-
 	user_dto = map_model(user, UserDTO)
 
 	_, new_balance = await balance_service.topup(user_dto, amount)

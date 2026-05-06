@@ -10,10 +10,7 @@ def parse_s3_key(raw: str) -> tuple[str, str]:
 	return bucket, key
 
 
-async def resolve_presigned_url(
-	manager: S3Manager,
-	raw_key: str | None,
-) -> str | None:
+async def resolve_presigned_url(manager: S3Manager, raw_key: str | None) -> str | None:
 	"""Превращает S3-ключ в presigned URL. None → None."""
 	if not raw_key:
 		return None

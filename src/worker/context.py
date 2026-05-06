@@ -3,7 +3,6 @@
 ctx — словарь, который arq передаёт в каждую task-функцию.
 Здесь создаём все зависимости вручную (без dishka).
 """
-
 import httpx
 import redis.asyncio as aioredis
 from aiogram import Bot

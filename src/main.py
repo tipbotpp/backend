@@ -1,5 +1,4 @@
 """Файл для определения точки входа в приложение и его базовой конфигурации"""
-
 from typing import Any, cast
 
 from dishka.integrations.fastapi import setup_dishka

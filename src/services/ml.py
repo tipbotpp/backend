@@ -19,12 +19,7 @@ class MLService:
 	def __init__(self, client: httpx.AsyncClient) -> None:
 		self._client = client
 
-	async def moderate(
-		self,
-		text: str,
-		stopwords: list[str],
-		streamer_id: int,
-	) -> None:
+	async def moderate(self, text: str, stopwords: list[str], streamer_id: int) -> None:
 		log = logger.bind(
 			request_streamer_id=streamer_id,
 			request_stopwords_count=len(stopwords),
@@ -34,11 +29,7 @@ class MLService:
 
 		result = await ml_gateway.check_moderation(
 			self._client,
-			ModerationRequestDTO(
-				text=text,
-				stopwords=stopwords,
-				streamer_id=streamer_id,
-			),
+			ModerationRequestDTO(text=text, stopwords=stopwords, streamer_id=streamer_id),
 		)
 		log.debug(
 			"ml.moderate result",
@@ -48,16 +39,10 @@ class MLService:
 		)
 
 		if result.verdict == "rejected_stopword":
-			log.info(
-				"ml.moderate rejected: stopword",
-				stopword_found=result.stopword_found,
-			)
+			log.info("ml.moderate rejected: stopword", stopword_found=result.stopword_found)
 			raise DonationRejectedStopwordError()
 		if result.verdict == "rejected_toxicity":
-			log.info(
-				"ml.moderate rejected: toxicity",
-				toxicity_score=result.toxicity_score,
-			)
+			log.info("ml.moderate rejected: toxicity", toxicity_score=result.toxicity_score)
 			raise DonationRejectedToxicityError()
 
 		log.debug("ml.moderate passed")
@@ -89,9 +74,5 @@ class MLService:
 				donation_id=donation_id,
 			),
 		)
-		log.info(
-			"ml.synthesize_tts done",
-			audio_key=result.audio_key,
-			duration_sec=result.duration_sec,
-		)
+		log.info("ml.synthesize_tts done", audio_key=result.audio_key, duration_sec=result.duration_sec)
 		return result

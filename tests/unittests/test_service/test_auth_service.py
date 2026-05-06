@@ -3,9 +3,12 @@ from src.services.auth import AuthService
 
 
 @pytest.mark.asyncio
-async def test_auth_service_check_access() -> None:
-	service = AuthService()
+async def test_auth_service_check_access():
 
-	result = await service.check_access(role="USER", required_role="USER")
+    service = AuthService()
 
-	assert result is True
+    user = {"role": "USER"}
+
+    result = service.check_access(user, "USER")
+
+    assert result is True

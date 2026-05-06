@@ -11,11 +11,7 @@ router = APIRouter(prefix="/balance", route_class=DishkaRoute)
 logger = get_logger().bind(layer="endpoint", module="balance")
 
 
-@router.get(
-	"",
-	response_model=balance_schema.BalanceResponse,
-	summary="Текущий баланс пользователя",
-)
+@router.get("", response_model=balance_schema.BalanceResponse, summary="Текущий баланс пользователя")
 @inject
 async def get_balance(user: CurrentUserDep) -> balance_schema.BalanceResponse:
 	"""Возвращает текущий баланс аутентифицированного пользователя.
@@ -31,11 +27,7 @@ async def get_balance(user: CurrentUserDep) -> balance_schema.BalanceResponse:
 	return balance_schema.BalanceResponse(balance=user.balance)
 
 
-@router.post(
-	"/topup",
-	response_model=balance_schema.TopupResponse,
-	summary="Пополнить баланс монетами",
-)
+@router.post("/topup", response_model=balance_schema.TopupResponse, summary="Пополнить баланс монетами")
 @inject
 async def topup(
 	body: balance_schema.TopupBody,
@@ -54,22 +46,12 @@ async def topup(
 		401: Пользователь не аутентифицирован.
 		422: Некорректная сумма (ноль или отрицательное значение).
 	"""
-	log = logger.bind(
-		request_user_id=user.telegram_id,
-		request_amount=body.amount,
-	)
+	log = logger.bind(request_user_id=user.telegram_id, request_amount=body.amount)
 	log.debug("POST /balance/topup")
 
-	previous_balance, new_balance = await balance_service.topup(
-		user,
-		body.amount,
-	)
+	previous_balance, new_balance = await balance_service.topup(user, body.amount)
 
-	log.info(
-		"topup success",
-		previous_balance=previous_balance,
-		new_balance=new_balance,
-	)
+	log.info("topup success", previous_balance=previous_balance, new_balance=new_balance)
 	return balance_schema.TopupResponse(
 		previous_balance=previous_balance,
 		added_amount=body.amount,

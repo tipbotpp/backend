@@ -19,20 +19,12 @@ async def get_by_id(session: AsyncSession, id: int) -> StreamSessionDTO | None:
 	return map_model(instance, StreamSessionDTO)
 
 
-async def get_by_ids(
-	session: AsyncSession,
-	ids: list[int],
-) -> list[StreamSessionDTO]:
-	result = await session.execute(
-		select(StreamSessions).where(StreamSessions.id.in_(ids)),
-	)
+async def get_by_ids(session: AsyncSession, ids: list[int]) -> list[StreamSessionDTO]:
+	result = await session.execute(select(StreamSessions).where(StreamSessions.id.in_(ids)))
 	return [map_model(row, StreamSessionDTO) for row in result.scalars().all()]
 
 
-async def create(
-	session: AsyncSession,
-	dto: StreamSessionCreateDTO,
-) -> StreamSessionDTO:
+async def create(session: AsyncSession, dto: StreamSessionCreateDTO) -> StreamSessionDTO:
 	instance = StreamSessions(**dataclasses.asdict(dto))
 	session.add(instance)
 	await session.flush()
@@ -40,10 +32,7 @@ async def create(
 	return map_model(instance, StreamSessionDTO)
 
 
-async def get_active_by_streamer_id(
-	session: AsyncSession,
-	streamer_id: int,
-) -> StreamSessionDTO | None:
+async def get_active_by_streamer_id(session: AsyncSession, streamer_id: int) -> StreamSessionDTO | None:
 	result = await session.execute(
 		select(StreamSessions).where(
 			StreamSessions.streamer_id == streamer_id,
@@ -56,14 +45,9 @@ async def get_active_by_streamer_id(
 	return map_model(instance, StreamSessionDTO)
 
 
-async def get_by_stream_token(
-	session: AsyncSession,
-	stream_token: str,
-) -> StreamSessionDTO | None:
+async def get_by_stream_token(session: AsyncSession, stream_token: str) -> StreamSessionDTO | None:
 	result = await session.execute(
-		select(StreamSessions).where(
-			StreamSessions.stream_token == stream_token,
-		),
+		select(StreamSessions).where(StreamSessions.stream_token == stream_token),
 	)
 	instance = result.scalar_one_or_none()
 	if instance is None:
@@ -71,11 +55,7 @@ async def get_by_stream_token(
 	return map_model(instance, StreamSessionDTO)
 
 
-async def deactivate(
-	session: AsyncSession,
-	id: int,
-	ended_at: datetime,
-) -> StreamSessionDTO | None:
+async def deactivate(session: AsyncSession, id: int, ended_at: datetime) -> StreamSessionDTO | None:
 	instance = await session.get(StreamSessions, id)
 	if instance is None:
 		return None
@@ -86,9 +66,7 @@ async def deactivate(
 	return map_model(instance, StreamSessionDTO)
 
 
-async def get_all_active_with_passive_income(
-	session: AsyncSession,
-) -> list[StreamSessionDTO]:
+async def get_all_active_with_passive_income(session: AsyncSession) -> list[StreamSessionDTO]:
 	result = await session.execute(
 		select(StreamSessions).where(
 			StreamSessions.is_active.is_(True),

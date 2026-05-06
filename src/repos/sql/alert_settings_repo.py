@@ -11,13 +11,8 @@ from src.schemas.dataclasses.settings import (
 from src.utils.mappers import map_model
 
 
-async def get_by_streamer_id(
-	session: AsyncSession,
-	streamer_id: int,
-) -> AlertSettingsDTO | None:
-	result = await session.execute(
-		select(AlertSettings).where(AlertSettings.streamer_id == streamer_id),
-	)
+async def get_by_streamer_id(session: AsyncSession, streamer_id: int) -> AlertSettingsDTO | None:
+	result = await session.execute(select(AlertSettings).where(AlertSettings.streamer_id == streamer_id))
 	instance = result.scalar_one_or_none()
 	if instance is None:
 		return None
@@ -31,20 +26,12 @@ async def get_by_id(session: AsyncSession, id: int) -> AlertSettingsDTO | None:
 	return map_model(instance, AlertSettingsDTO)
 
 
-async def get_by_ids(
-	session: AsyncSession,
-	ids: list[int],
-) -> list[AlertSettingsDTO]:
-	result = await session.execute(
-		select(AlertSettings).where(AlertSettings.id.in_(ids)),
-	)
+async def get_by_ids(session: AsyncSession, ids: list[int]) -> list[AlertSettingsDTO]:
+	result = await session.execute(select(AlertSettings).where(AlertSettings.id.in_(ids)))
 	return [map_model(row, AlertSettingsDTO) for row in result.scalars().all()]
 
 
-async def create(
-	session: AsyncSession,
-	dto: AlertSettingsCreateDTO,
-) -> AlertSettingsDTO:
+async def create(session: AsyncSession, dto: AlertSettingsCreateDTO) -> AlertSettingsDTO:
 	instance = AlertSettings(**dataclasses.asdict(dto))
 	session.add(instance)
 	await session.flush()
@@ -57,9 +44,7 @@ async def update(
 	streamer_id: int,
 	**fields: object,
 ) -> AlertSettingsDTO | None:
-	result = await session.execute(
-		select(AlertSettings).where(AlertSettings.streamer_id == streamer_id),
-	)
+	result = await session.execute(select(AlertSettings).where(AlertSettings.streamer_id == streamer_id))
 	instance = result.scalar_one_or_none()
 	if instance is None:
 		return None

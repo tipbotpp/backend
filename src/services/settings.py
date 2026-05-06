@@ -1,5 +1,4 @@
 """Сервис настроек стримера: alert style, goal, stop-words, passive income, test alert."""
-
 from __future__ import annotations
 
 from redis.asyncio import Redis
@@ -48,10 +47,7 @@ class SettingsService:
 		log.debug("settings.get_alert")
 		self._require_streamer(user)
 
-		settings = await sql.alert_settings_repo.get_by_streamer_id(
-			self._session,
-			user.telegram_id,
-		)
+		settings = await sql.alert_settings_repo.get_by_streamer_id(self._session, user.telegram_id)
 		if settings is None:
 			settings = await sql.alert_settings_repo.create(
 				self._session,
@@ -60,30 +56,19 @@ class SettingsService:
 			log.info("alert settings created with defaults")
 		return settings
 
-	async def update_alert(
-		self,
-		user: UserDTO,
-		**fields: object,
-	) -> AlertSettingsDTO:
+	async def update_alert(self, user: UserDTO, **fields: object) -> AlertSettingsDTO:
 		log = logger.bind(request_user_id=user.telegram_id)
 		log.info("settings.update_alert started")
 		self._require_streamer(user)
 
-		settings = await sql.alert_settings_repo.get_by_streamer_id(
-			self._session,
-			user.telegram_id,
-		)
+		settings = await sql.alert_settings_repo.get_by_streamer_id(self._session, user.telegram_id)
 		if settings is None:
 			settings = await sql.alert_settings_repo.create(
 				self._session,
 				AlertSettingsCreateDTO(streamer_id=user.telegram_id),
 			)
 
-		updated = await sql.alert_settings_repo.update(
-			self._session,
-			user.telegram_id,
-			**fields,
-		)
+		updated = await sql.alert_settings_repo.update(self._session, user.telegram_id, **fields)
 		if updated is None:
 			raise NotFoundError()
 
@@ -95,18 +80,12 @@ class SettingsService:
 		log.info("settings.test_alert started")
 		self._require_streamer(user)
 
-		active = await sql.stream_sessions_repo.get_active_by_streamer_id(
-			self._session,
-			user.telegram_id,
-		)
+		active = await sql.stream_sessions_repo.get_active_by_streamer_id(self._session, user.telegram_id)
 		if active is None:
 			log.error("test_alert: no active stream")
 			raise StreamNotActiveError()
 
-		settings = await sql.alert_settings_repo.get_by_streamer_id(
-			self._session,
-			user.telegram_id,
-		)
+		settings = await sql.alert_settings_repo.get_by_streamer_id(self._session, user.telegram_id)
 
 		event = {
 			"type": "test_alert",
@@ -122,11 +101,7 @@ class SettingsService:
 				"duration_sec": settings.duration_sec if settings else 5,
 			},
 		}
-		await ws_queue_repo.push_control(
-			self._redis,
-			active.stream_token,
-			event,
-		)
+		await ws_queue_repo.push_control(self._redis, active.stream_token, event)
 		log.info("test_alert pushed", stream_token=active.stream_token)
 
 	# ── Goal ─────────────────────────────────────────────────────────────────
@@ -136,10 +111,7 @@ class SettingsService:
 		log.debug("settings.get_goal")
 		self._require_streamer(user)
 
-		goal = await sql.stream_goals_repo.get_by_streamer_id(
-			self._session,
-			user.telegram_id,
-		)
+		goal = await sql.stream_goals_repo.get_by_streamer_id(self._session, user.telegram_id)
 		if goal is None:
 			goal = await sql.stream_goals_repo.create(
 				self._session,
@@ -148,30 +120,19 @@ class SettingsService:
 			log.info("goal created with defaults")
 		return goal
 
-	async def update_goal(
-		self,
-		user: UserDTO,
-		**fields: object,
-	) -> StreamGoalDTO:
+	async def update_goal(self, user: UserDTO, **fields: object) -> StreamGoalDTO:
 		log = logger.bind(request_user_id=user.telegram_id)
 		log.info("settings.update_goal started")
 		self._require_streamer(user)
 
-		goal = await sql.stream_goals_repo.get_by_streamer_id(
-			self._session,
-			user.telegram_id,
-		)
+		goal = await sql.stream_goals_repo.get_by_streamer_id(self._session, user.telegram_id)
 		if goal is None:
 			goal = await sql.stream_goals_repo.create(
 				self._session,
 				StreamGoalCreateDTO(streamer_id=user.telegram_id),
 			)
 
-		updated = await sql.stream_goals_repo.update(
-			self._session,
-			user.telegram_id,
-			**fields,
-		)
+		updated = await sql.stream_goals_repo.update(self._session, user.telegram_id, **fields)
 		if updated is None:
 			raise NotFoundError()
 
@@ -184,10 +145,7 @@ class SettingsService:
 		log = logger.bind(request_user_id=user.telegram_id)
 		log.debug("settings.get_stopwords")
 		self._require_streamer(user)
-		return await sql.stop_words_repo.get_by_streamer_id(
-			self._session,
-			user.telegram_id,
-		)
+		return await sql.stop_words_repo.get_by_streamer_id(self._session, user.telegram_id)
 
 	async def add_stopword(self, user: UserDTO, word: str) -> StopWordDTO:
 		log = logger.bind(request_user_id=user.telegram_id, request_word=word)
@@ -225,18 +183,12 @@ class SettingsService:
 
 	# ── Passive Income ────────────────────────────────────────────────────────
 
-	async def get_passive_income(
-		self,
-		user: UserDTO,
-	) -> PassiveIncomeSettingsDTO:
+	async def get_passive_income(self, user: UserDTO) -> PassiveIncomeSettingsDTO:
 		log = logger.bind(request_user_id=user.telegram_id)
 		log.debug("settings.get_passive_income")
 		self._require_streamer(user)
 
-		settings = await sql.passive_income_settings_repo.get_by_streamer_id(
-			self._session,
-			user.telegram_id,
-		)
+		settings = await sql.passive_income_settings_repo.get_by_streamer_id(self._session, user.telegram_id)
 		if settings is None:
 			settings = await sql.passive_income_settings_repo.create(
 				self._session,
@@ -245,30 +197,19 @@ class SettingsService:
 			log.info("passive income settings created with defaults")
 		return settings
 
-	async def update_passive_income(
-		self,
-		user: UserDTO,
-		**fields: object,
-	) -> PassiveIncomeSettingsDTO:
+	async def update_passive_income(self, user: UserDTO, **fields: object) -> PassiveIncomeSettingsDTO:
 		log = logger.bind(request_user_id=user.telegram_id)
 		log.info("settings.update_passive_income started")
 		self._require_streamer(user)
 
-		settings = await sql.passive_income_settings_repo.get_by_streamer_id(
-			self._session,
-			user.telegram_id,
-		)
+		settings = await sql.passive_income_settings_repo.get_by_streamer_id(self._session, user.telegram_id)
 		if settings is None:
 			settings = await sql.passive_income_settings_repo.create(
 				self._session,
 				PassiveIncomeSettingsCreateDTO(streamer_id=user.telegram_id),
 			)
 
-		updated = await sql.passive_income_settings_repo.update(
-			self._session,
-			user.telegram_id,
-			**fields,
-		)
+		updated = await sql.passive_income_settings_repo.update(self._session, user.telegram_id, **fields)
 		if updated is None:
 			raise NotFoundError()
 

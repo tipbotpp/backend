@@ -37,10 +37,7 @@ async def cmd_stream(
 	active = await stream_service.get_status(user_dto)
 
 	if active is None:
-		await message.answer(
-			StreamText.inactive(),
-			reply_markup=kb.stream_inactive(),
-		)
+		await message.answer(StreamText.inactive(), reply_markup=kb.stream_inactive())
 	else:
 		widget_url = make_widget_url(active.stream_token)
 		await message.answer(
@@ -64,31 +61,21 @@ async def cb_stream_start(
 	user_dto = map_model(user, UserDTO)
 
 	try:
-		session = await stream_service.start(
-			user_dto,
-			passive_income_enabled=False,
-		)
+		session = await stream_service.start(user_dto, passive_income_enabled=False)
 	except StreamerRequiredError:
-		await msg.answer(
-			"❌ Управление стримом доступно только для стримеров.",
-		)
+		await msg.answer("❌ Управление стримом доступно только для стримеров.")
 		return
 	except StreamAlreadyActiveError:
 		active = await stream_service.get_status(user_dto)
 		widget_url = make_widget_url(active.stream_token) if active else ""
 		await msg.answer(
-			StreamText.already_active(widget_url, active.started_at)
-			if active
-			else "Стрим уже активен.",
+			StreamText.already_active(widget_url, active.started_at) if active else "Стрим уже активен.",
 			reply_markup=kb.stream_active(),
 		)
 		return
 
 	widget_url = make_widget_url(session.stream_token)
-	await msg.answer(
-		StreamText.started(widget_url),
-		reply_markup=kb.stream_active(),
-	)
+	await msg.answer(StreamText.started(widget_url), reply_markup=kb.stream_active())
 
 
 @router.callback_query(F.data == "stream:stop")
@@ -111,17 +98,9 @@ async def cb_stream_stop(
 		await msg.answer(StreamText.not_active())
 		return
 
-	duration = (
-		int((stopped.ended_at - stopped.started_at).total_seconds())
-		if stopped.ended_at
-		else 0
-	)
+	duration = int((stopped.ended_at - stopped.started_at).total_seconds()) if stopped.ended_at else 0
 	await msg.answer(
-		StreamText.stopped(
-			stats.total_collected,
-			stats.donations_count,
-			duration,
-		),
+		StreamText.stopped(stats.total_collected, stats.donations_count, duration),
 		reply_markup=None,
 	)
 

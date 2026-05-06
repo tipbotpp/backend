@@ -307,11 +307,7 @@ class Base(DeclarativeBase):
 		await session.delete(self)
 
 	@classmethod
-	async def get_by_id(
-		cls: type[T],
-		session: AsyncSession,
-		id: Any,
-	) -> T | None:
+	async def get_by_id(cls: type[T], session: AsyncSession, id: Any) -> T | None:
 		"""Асинхронно возвращает объект по первичному ключу (id)."""
 		return await session.get(cls, id)
 

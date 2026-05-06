@@ -4,7 +4,6 @@
   ws:jobs:{token}    — job_id от arq (новый донат обработан)
   ws:control:{token} — управляющие события (stream_stopped, test_alert)
 """
-
 from __future__ import annotations
 
 import json
@@ -32,13 +31,7 @@ async def push_job_id(redis: Redis, stream_token: str, job_id: str) -> None:
 
 async def push_control(redis: Redis, stream_token: str, event: dict) -> None:
 	"""Положить управляющее событие (stream_stopped, test_alert и т.д.)."""
-	await cast(
-		Awaitable[int],
-		redis.lpush(
-			control_key(stream_token),
-			json.dumps(event, ensure_ascii=False),
-		),
-	)
+	await cast(Awaitable[int], redis.lpush(control_key(stream_token), json.dumps(event, ensure_ascii=False)))
 
 
 async def pop_next(
@@ -49,10 +42,7 @@ async def pop_next(
 	"""BLPOP из обеих очередей. Возвращает ("job"|"control", value) или (None, None) по таймауту."""
 	result = await cast(
 		Awaitable[list[bytes] | None],
-		redis.blpop(
-			[jobs_key(stream_token), control_key(stream_token)],
-			timeout=timeout,
-		),
+		redis.blpop([jobs_key(stream_token), control_key(stream_token)], timeout=timeout),
 	)
 	if result is None:
 		return None, None
@@ -65,7 +55,4 @@ async def pop_next(
 
 async def cleanup(redis: Redis, stream_token: str) -> None:
 	"""Удалить очереди при завершении стрима."""
-	await cast(
-		Awaitable[int],
-		redis.delete(jobs_key(stream_token), control_key(stream_token)),
-	)
+	await cast(Awaitable[int], redis.delete(jobs_key(stream_token), control_key(stream_token)))

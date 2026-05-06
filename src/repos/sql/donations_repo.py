@@ -26,13 +26,8 @@ async def get_by_id(session: AsyncSession, id: int) -> DonationDTO | None:
 	return map_model(instance, DonationDTO)
 
 
-async def get_by_ids(
-	session: AsyncSession,
-	ids: list[int],
-) -> list[DonationDTO]:
-	result = await session.execute(
-		select(Donations).where(Donations.id.in_(ids)),
-	)
+async def get_by_ids(session: AsyncSession, ids: list[int]) -> list[DonationDTO]:
+	result = await session.execute(select(Donations).where(Donations.id.in_(ids)))
 	return [map_model(row, DonationDTO) for row in result.scalars().all()]
 
 
@@ -59,10 +54,7 @@ async def get_history(
 	elif type_filter == "received":
 		condition = Donations.to_streamer_id == user_id
 	else:
-		condition = or_(
-			Donations.from_user_id == user_id,
-			Donations.to_streamer_id == user_id,
-		)
+		condition = or_(Donations.from_user_id == user_id, Donations.to_streamer_id == user_id)
 
 	total_result = await session.execute(
 		select(func.count()).select_from(Donations).where(condition),
@@ -87,14 +79,8 @@ async def get_history(
 			status=donation.status,
 			audio_key=donation.audio_url,
 			image_key=donation.image_url,
-			from_user=DonorDTO(
-				id=from_user.telegram_id,
-				username=from_user.username,
-			),
-			to_streamer=DonorDTO(
-				id=to_streamer.telegram_id,
-				username=to_streamer.username,
-			),
+			from_user=DonorDTO(id=from_user.telegram_id, username=from_user.username),
+			to_streamer=DonorDTO(id=to_streamer.telegram_id, username=to_streamer.username),
 			created_at=donation.created_at,
 		)
 		for donation, from_user, to_streamer in rows.tuples().all()
@@ -103,10 +89,7 @@ async def get_history(
 	return items, total
 
 
-async def get_session_stats(
-	session: AsyncSession,
-	session_id: int,
-) -> SessionStatsDTO:
+async def get_session_stats(session: AsyncSession, session_id: int) -> SessionStatsDTO:
 	agg = await session.execute(
 		select(
 			func.coalesce(func.sum(Donations.amount), 0).label("total"),
@@ -125,11 +108,7 @@ async def get_session_stats(
 		.limit(1),
 	)
 	top = top_row.one_or_none()
-	top_donator = (
-		TopDonatorDTO(username=top.username, total_amount=top.total)
-		if top
-		else None
-	)
+	top_donator = TopDonatorDTO(username=top.username, total_amount=top.total) if top else None
 
 	timeline_rows = await session.execute(
 		select(Donations.created_at, Donations.amount)
@@ -140,9 +119,7 @@ async def get_session_stats(
 	for ts, amount in timeline_rows.all():
 		minute_bucket = (ts.minute // 15) * 15
 		buckets[f"{ts.hour:02d}:{minute_bucket:02d}"] += amount
-	timeline = [
-		TimelineItemDTO(time=t, amount=a) for t, a in sorted(buckets.items())
-	]
+	timeline = [TimelineItemDTO(time=t, amount=a) for t, a in sorted(buckets.items())]
 
 	return SessionStatsDTO(
 		session_id=session_id,

@@ -23,7 +23,6 @@ logger = get_logger().bind(layer="service", module="auth")
 
 # ── Pure helpers ─────────────────────────────────────────────────────────────
 
-
 def create_token(telegram_id: int) -> tuple[str, str]:
 	"""Создать JWT (RS256). Возвращает (token, jti)."""
 	jti = str(uuid.uuid4())
@@ -53,33 +52,31 @@ def decode_token(token: str) -> dict[str, object]:
 
 # ── Shared auth helper ────────────────────────────────────────────────────────
 
-
 async def get_user_from_cookie(
-	token: str | None,
-	session: AsyncSession,
-	redis: Redis,
+    token: str | None,
+    session: AsyncSession,
+    redis: Redis,
 ) -> UserDTO | None:
-	"""Валидирует JWT из cookie и возвращает UserDTO.
+    """Валидирует JWT из cookie и возвращает UserDTO.
 
-	Используется как в HTTP-провайдере (Request.cookies), так и
-	в WebSocket-хендлере (WebSocket.cookies). Возвращает None если
-	токен отсутствует, невалиден или сессия отозвана.
-	"""
-	if not token:
-		return None
-	try:
-		payload = decode_token(token)
-		jti = cast(str, payload["jti"])
-		telegram_id = await sessions_repo.get_telegram_id(redis, jti)
-		if telegram_id is None:
-			return None
-	except (jwt.PyJWTError, KeyError, ValueError):
-		return None
-	return await sql.users_repo.get_by_telegram_id(session, telegram_id)
+    Используется как в HTTP-провайдере (Request.cookies), так и
+    в WebSocket-хендлере (WebSocket.cookies). Возвращает None если
+    токен отсутствует, невалиден или сессия отозвана.
+    """
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+        jti = cast(str, payload["jti"])
+        telegram_id = await sessions_repo.get_telegram_id(redis, jti)
+        if telegram_id is None:
+            return None
+    except (jwt.PyJWTError, KeyError, ValueError):
+        return None
+    return await sql.users_repo.get_by_telegram_id(session, telegram_id)
 
 
 # ── Service ───────────────────────────────────────────────────────────────────
-
 
 class AuthService:
 	def __init__(self, session: AsyncSession, redis: Redis) -> None:
@@ -102,22 +99,13 @@ class AuthService:
 
 		tg_user = self._parse_tg_user(params)
 		telegram_id: int = int(cast(int | str, tg_user["id"]))
-		username = (
-			str(tg_user["username"]) if tg_user.get("username") else None
-		)
-		display_name = (
-			str(tg_user["first_name"]) if tg_user.get("first_name") else None
-		)
-		avatar_url = (
-			str(tg_user["photo_url"]) if tg_user.get("photo_url") else None
-		)
+		username = str(tg_user["username"]) if tg_user.get("username") else None
+		display_name = str(tg_user["first_name"]) if tg_user.get("first_name") else None
+		avatar_url = str(tg_user["photo_url"]) if tg_user.get("photo_url") else None
 
 		log = log.bind(telegram_id=telegram_id, username=username)
 
-		user = await sql.users_repo.get_by_telegram_id(
-			self._session,
-			telegram_id,
-		)
+		user = await sql.users_repo.get_by_telegram_id(self._session, telegram_id)
 
 		if user is None:
 			user = await sql.users_repo.create(
@@ -143,14 +131,8 @@ class AuthService:
 		return updated or user, False
 
 	async def _authenticate_dev_user(self) -> tuple[UserDTO, bool]:
-		log = logger.bind(
-			telegram_id=cfg.dev.telegram_id,
-			username=cfg.dev.username,
-		)
-		user = await sql.users_repo.get_by_telegram_id(
-			self._session,
-			cfg.dev.telegram_id,
-		)
+		log = logger.bind(telegram_id=cfg.dev.telegram_id, username=cfg.dev.username)
+		user = await sql.users_repo.get_by_telegram_id(self._session, cfg.dev.telegram_id)
 		if user is not None:
 			log.debug("auth.dev user found")
 			return user, False

@@ -2,7 +2,6 @@
 
 Запуск: arq src.worker.WorkerSettings
 """
-
 from arq import cron
 from arq.connections import RedisSettings
 

@@ -35,9 +35,7 @@ class DonateText:
 
 	@staticmethod
 	def ask_message() -> str:
-		return (
-			"💬 Введи сообщение для стримера или нажми <b>Без сообщения</b>:"
-		)
+		return "💬 Введи сообщение для стримера или нажми <b>Без сообщения</b>:"
 
 	@staticmethod
 	def success(streamer_name: str) -> str:
@@ -47,11 +45,7 @@ class DonateText:
 		)
 
 	@staticmethod
-	def notification_to_streamer(
-		donor_name: str,
-		amount: int,
-		message: str | None,
-	) -> str:
+	def notification_to_streamer(donor_name: str, amount: int, message: str | None) -> str:
 		text = (
 			f"💰 <b>Новый донат!</b>\n\n"
 			f"От: <b>{donor_name}</b>\n"

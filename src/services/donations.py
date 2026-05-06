@@ -61,37 +61,23 @@ class DonationService:
 			log.error("user cannot donate to themselves")
 			raise ForbiddenError()
 
-		streamer = await sql.users_repo.get_by_telegram_id(
-			self._session,
-			streamer_id,
-		)
+		streamer = await sql.users_repo.get_by_telegram_id(self._session, streamer_id)
 		if streamer is None or streamer.role != UserRole.STREAMER:
 			log.error("streamer not found")
 			raise UserNotFoundError()
 
-		stream_session = (
-			await sql.stream_sessions_repo.get_active_by_streamer_id(
-				self._session,
-				streamer_id,
-			)
-		)
+		stream_session = await sql.stream_sessions_repo.get_active_by_streamer_id(self._session, streamer_id)
 		if stream_session is None:
 			log.error("stream not active")
 			raise StreamNotActiveError()
 
 		# Быстрый фейл на стейл-данных — не ходим в БД если баланс заведомо мал
 		if user.balance < amount:
-			log.error(
-				"insufficient balance (stale check)",
-				user_balance=user.balance,
-			)
+			log.error("insufficient balance (stale check)", user_balance=user.balance)
 			raise InsufficientBalanceError()
 
 		if message:
-			stop_words = await sql.stop_words_repo.get_by_streamer_id(
-				self._session,
-				streamer_id,
-			)
+			stop_words = await sql.stop_words_repo.get_by_streamer_id(self._session, streamer_id)
 			log.debug("moderation started", stop_words_count=len(stop_words))
 			await self._ml_service.moderate(
 				text=message,
@@ -115,15 +101,10 @@ class DonationService:
 
 		# Атомарный декремент: списываем только если balance >= amount прямо сейчас
 		new_viewer_balance = await sql.users_repo.decrement_balance(
-			self._session,
-			user.telegram_id,
-			amount,
+			self._session, user.telegram_id, amount,
 		)
 		if new_viewer_balance is None:
-			log.error(
-				"insufficient balance (atomic check)",
-				user_balance=user.balance,
-			)
+			log.error("insufficient balance (atomic check)", user_balance=user.balance)
 			raise InsufficientBalanceError()
 
 		await sql.balance_transactions_repo.create(
@@ -136,11 +117,7 @@ class DonationService:
 			),
 		)
 
-		await sql.users_repo.increment_balance(
-			self._session,
-			streamer_id,
-			amount,
-		)
+		await sql.users_repo.increment_balance(self._session, streamer_id, amount)
 		await sql.balance_transactions_repo.create(
 			self._session,
 			BalanceTransactionCreateDTO(
@@ -151,16 +128,9 @@ class DonationService:
 			),
 		)
 
-		alert_settings = await sql.alert_settings_repo.get_by_streamer_id(
-			self._session,
-			streamer_id,
-		)
-		tts_enabled = bool(message) and (
-			alert_settings.tts_enabled if alert_settings else True
-		)
-		image_enabled = bool(message) and (
-			alert_settings.image_enabled if alert_settings else True
-		)
+		alert_settings = await sql.alert_settings_repo.get_by_streamer_id(self._session, streamer_id)
+		tts_enabled = bool(message) and (alert_settings.tts_enabled if alert_settings else True)
+		image_enabled = bool(message) and (alert_settings.image_enabled if alert_settings else True)
 		voice = alert_settings.tts_voice if alert_settings else "silero_v3_ru"
 
 		job = await self._arq_pool.enqueue_job(
@@ -174,27 +144,14 @@ class DonationService:
 			image_enabled=image_enabled,
 			streamer_id=streamer_id,
 			stream_token=stream_session.stream_token,
-			alert_bg_color=alert_settings.bg_color
-			if alert_settings
-			else "#1a1a2e",
-			alert_text_color=alert_settings.text_color
-			if alert_settings
-			else "#ffffff",
+			alert_bg_color=alert_settings.bg_color if alert_settings else "#1a1a2e",
+			alert_text_color=alert_settings.text_color if alert_settings else "#ffffff",
 			alert_font=alert_settings.font if alert_settings else "Roboto",
-			alert_duration_sec=alert_settings.duration_sec
-			if alert_settings
-			else 5,
+			alert_duration_sec=alert_settings.duration_sec if alert_settings else 5,
 		)
 		if job is not None:
-			await ws_queue_repo.push_job_id(
-				self._arq_pool,
-				stream_session.stream_token,
-				job.job_id,
-			)
-		log.info(
-			"donation.send done — media task enqueued",
-			donation_id=donation.id,
-		)
+			await ws_queue_repo.push_job_id(self._arq_pool, stream_session.stream_token, job.job_id)
+		log.info("donation.send done — media task enqueued", donation_id=donation.id)
 
 		return donation
 
@@ -230,22 +187,11 @@ class DonationService:
 			log.error("streamer role required", user_role=user.role)
 			raise StreamerRequiredError()
 
-		stream_session = (
-			await sql.stream_sessions_repo.get_active_by_streamer_id(
-				self._session,
-				user.telegram_id,
-			)
-		)
+		stream_session = await sql.stream_sessions_repo.get_active_by_streamer_id(self._session, user.telegram_id)
 		if stream_session is None:
 			log.error("no active stream session")
 			raise StreamNotActiveError()
 
-		stats = await sql.donations_repo.get_session_stats(
-			self._session,
-			stream_session.id,
-		)
-		log.debug(
-			"donation.get_session_stats done",
-			session_id=stream_session.id,
-		)
+		stats = await sql.donations_repo.get_session_stats(self._session, stream_session.id)
+		log.debug("donation.get_session_stats done", session_id=stream_session.id)
 		return stats
