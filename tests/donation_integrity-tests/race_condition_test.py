@@ -1,4 +1,6 @@
 import asyncio
+import pytest
+
 
 @pytest.mark.asyncio
 async def test_concurrent_donations(donation_service, user, streamer):

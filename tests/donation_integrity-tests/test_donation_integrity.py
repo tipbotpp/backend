@@ -1,4 +1,33 @@
 import pytest
+from sqlalchemy import select
+
+from src.models.users import User
+from src.models.donations import Donation
+from src.models.balance_transactions import BalanceTransaction
+
+
+async def get_user(session, telegram_id):
+    result = await session.execute(
+        select(User).where(User.telegram_id == telegram_id)
+    )
+    return result.scalar_one()
+
+
+async def get_donations(session, donation_id):
+    result = await session.execute(
+        select(Donation).where(Donation.id == donation_id)
+    )
+    return result.scalars().all()
+
+
+async def get_transactions(session, donation_id):
+    result = await session.execute(
+        select(BalanceTransaction).where(
+            BalanceTransaction.donation_id == donation_id
+        )
+    )
+    return result.scalars().all()
+
 
 @pytest.mark.asyncio
 async def test_donation_atomicity(donation_service, session, user, streamer):
