@@ -39,6 +39,23 @@ async def create(session: AsyncSession, dto: AlertSettingsCreateDTO) -> AlertSet
 	return map_model(instance, AlertSettingsDTO)
 
 
+async def update(
+	session: AsyncSession,
+	streamer_id: int,
+	**fields: object,
+) -> AlertSettingsDTO | None:
+	result = await session.execute(select(AlertSettings).where(AlertSettings.streamer_id == streamer_id))
+	instance = result.scalar_one_or_none()
+	if instance is None:
+		return None
+	for key, value in fields.items():
+		if value is not None and hasattr(instance, key):
+			setattr(instance, key, value)
+	await session.flush()
+	await session.refresh(instance)
+	return map_model(instance, AlertSettingsDTO)
+
+
 async def delete(session: AsyncSession, id: int) -> None:
 	instance = await session.get(AlertSettings, id)
 	if instance is not None:

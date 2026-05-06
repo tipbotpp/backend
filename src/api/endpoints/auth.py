@@ -15,13 +15,27 @@ router = APIRouter(prefix="/auth", route_class=DishkaRoute)
 logger = get_logger().bind(layer="endpoint", module="auth")
 
 
-@router.post("/telegram", response_model=auth_schema.AuthResponse)
+@router.post("/telegram", response_model=auth_schema.AuthResponse, summary="Авторизация через Telegram Mini App")
 @inject
 async def telegram_auth(
 	body: auth_schema.TelegramAuthBody,
 	response: Response,
 	auth_service: FromDishka[AuthService],
 ) -> auth_schema.AuthResponse:
+	"""Авторизация через Telegram Mini App.
+
+	Валидирует `initData` из Telegram WebApp, создаёт или обновляет пользователя,
+	выдаёт JWT в httpOnly cookie `access_token`.
+
+	Args:
+		body: Объект с полем `init_data` — строка initData из `window.Telegram.WebApp`.
+
+	Returns:
+		AuthResponse: Флаг `is_new_user` и базовые данные пользователя.
+
+	Raises:
+		400: Неверная подпись `initData` (невалидный токен или данные подделаны).
+	"""
 	log = logger.bind(
 		request_init_data_length=len(body.init_data),
 		request_init_data=body.init_data,

@@ -16,13 +16,29 @@ router = APIRouter(prefix="/stream", route_class=DishkaRoute)
 logger = get_logger().bind(layer="endpoint", module="stream")
 
 
-@router.post("/start", response_model=stream_schema.StreamStartResponse)
+@router.post("/start", response_model=stream_schema.StreamStartResponse, summary="Начать стрим")
 @inject
 async def start_stream(
 	body: stream_schema.StreamStartBody,
 	stream_service: FromDishka[StreamService],
 	user: CurrentUserDep,
 ) -> stream_schema.StreamStartResponse:
+	"""Запускает новую сессию стрима для стримера.
+
+	Генерирует уникальный `stream_token`, который используется для подключения
+	OBS Browser Source к виджету и WebSocket. Токен действителен до остановки стрима.
+
+	Args:
+		body: Флаг включения пассивного дохода для зрителей.
+
+	Returns:
+		StreamStartResponse: Токен сессии, URL виджета и WebSocket.
+
+	Raises:
+		401: Пользователь не аутентифицирован.
+		403: Доступно только стримерам.
+		409: Стрим уже запущен.
+	"""
 	log = logger.bind(request_user_id=user.telegram_id)
 	log.debug("POST /stream/start")
 
@@ -38,13 +54,26 @@ async def start_stream(
 	)
 
 
-@router.post("/stop", response_model=stream_schema.StreamStopResponse)
+@router.post("/stop", response_model=stream_schema.StreamStopResponse, summary="Завершить стрим")
 @inject
 async def stop_stream(
 	stream_service: FromDishka[StreamService],
 	redis: FromDishka[Redis],
 	user: CurrentUserDep,
 ) -> stream_schema.StreamStopResponse:
+	"""Завершает текущую активную сессию стрима.
+
+	Отправляет событие `stream_stopped` в OBS-виджет через WebSocket,
+	после чего виджет должен отключиться. Возвращает итоговую статистику сессии.
+
+	Returns:
+		StreamStopResponse: Общая сумма донатов, их количество и длительность стрима.
+
+	Raises:
+		401: Пользователь не аутентифицирован.
+		403: Доступно только стримерам.
+		404: Нет активного стрима для остановки.
+	"""
 	log = logger.bind(request_user_id=user.telegram_id)
 	log.debug("POST /stream/stop")
 
@@ -70,12 +99,23 @@ async def stop_stream(
 	)
 
 
-@router.get("/status", response_model=stream_schema.StreamStatusResponse)
+@router.get("/status", response_model=stream_schema.StreamStatusResponse, summary="Статус текущего стрима")
 @inject
 async def stream_status(
 	stream_service: FromDishka[StreamService],
 	user: CurrentUserDep,
 ) -> stream_schema.StreamStatusResponse:
+	"""Возвращает статус текущего стрима стримера.
+
+	Если стрим не запущен — `is_live: false`, остальные поля `null`.
+
+	Returns:
+		StreamStatusResponse: Статус стрима, ID сессии и URL виджета.
+
+	Raises:
+		401: Пользователь не аутентифицирован.
+		403: Доступно только стримерам.
+	"""
 	log = logger.bind(request_user_id=user.telegram_id)
 	log.debug("GET /stream/status")
 

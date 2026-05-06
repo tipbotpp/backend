@@ -66,6 +66,16 @@ async def deactivate(session: AsyncSession, id: int, ended_at: datetime) -> Stre
 	return map_model(instance, StreamSessionDTO)
 
 
+async def get_all_active_with_passive_income(session: AsyncSession) -> list[StreamSessionDTO]:
+	result = await session.execute(
+		select(StreamSessions).where(
+			StreamSessions.is_active.is_(True),
+			StreamSessions.passive_income_enabled.is_(True),
+		),
+	)
+	return [map_model(row, StreamSessionDTO) for row in result.scalars().all()]
+
+
 async def delete(session: AsyncSession, id: int) -> None:
 	instance = await session.get(StreamSessions, id)
 	if instance is not None:

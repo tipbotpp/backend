@@ -38,6 +38,23 @@ async def create(session: AsyncSession, dto: StreamGoalCreateDTO) -> StreamGoalD
 	return map_model(instance, StreamGoalDTO)
 
 
+async def update(
+	session: AsyncSession,
+	streamer_id: int,
+	**fields: object,
+) -> StreamGoalDTO | None:
+	result = await session.execute(select(StreamGoals).where(StreamGoals.streamer_id == streamer_id))
+	instance = result.scalar_one_or_none()
+	if instance is None:
+		return None
+	for key, value in fields.items():
+		if value is not None and hasattr(instance, key):
+			setattr(instance, key, value)
+	await session.flush()
+	await session.refresh(instance)
+	return map_model(instance, StreamGoalDTO)
+
+
 async def delete(session: AsyncSession, id: int) -> None:
 	instance = await session.get(StreamGoals, id)
 	if instance is not None:
