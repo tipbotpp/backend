@@ -15,7 +15,12 @@ logger = get_logger().bind(layer="endpoint", module="settings")
 
 # ── Alert Style ───────────────────────────────────────────────────────────────
 
-@router.get("/alert", response_model=settings_schema.AlertSettingsResponse, summary="Настройки алерта стримера")
+
+@router.get(
+	"/alert",
+	response_model=settings_schema.AlertSettingsResponse,
+	summary="Настройки алерта стримера",
+)
 @inject
 async def get_alert(
 	user: CurrentUserDep,
@@ -46,7 +51,11 @@ async def get_alert(
 	)
 
 
-@router.patch("/alert", response_model=settings_schema.AlertSettingsResponse, summary="Обновить настройки алерта")
+@router.patch(
+	"/alert",
+	response_model=settings_schema.AlertSettingsResponse,
+	summary="Обновить настройки алерта",
+)
 @inject
 async def update_alert(
 	body: settings_schema.AlertSettingsBody,
@@ -128,7 +137,12 @@ async def test_alert(
 
 # ── Goal ──────────────────────────────────────────────────────────────────────
 
-@router.get("/goal", response_model=settings_schema.GoalResponse, summary="Цель сбора стримера")
+
+@router.get(
+	"/goal",
+	response_model=settings_schema.GoalResponse,
+	summary="Цель сбора стримера",
+)
 @inject
 async def get_goal(
 	user: CurrentUserDep,
@@ -156,7 +170,11 @@ async def get_goal(
 	)
 
 
-@router.patch("/goal", response_model=settings_schema.GoalResponse, summary="Обновить цель сбора")
+@router.patch(
+	"/goal",
+	response_model=settings_schema.GoalResponse,
+	summary="Обновить цель сбора",
+)
 @inject
 async def update_goal(
 	body: settings_schema.GoalBody,
@@ -193,7 +211,12 @@ async def update_goal(
 
 # ── Stop Words ────────────────────────────────────────────────────────────────
 
-@router.get("/stopwords", response_model=list[settings_schema.StopWordResponse], summary="Список стоп-слов стримера")
+
+@router.get(
+	"/stopwords",
+	response_model=list[settings_schema.StopWordResponse],
+	summary="Список стоп-слов стримера",
+)
 @inject
 async def get_stopwords(
 	user: CurrentUserDep,
@@ -214,7 +237,9 @@ async def get_stopwords(
 	log = logger.bind(request_user_id=user.telegram_id)
 	log.debug("GET /settings/stopwords")
 	words = await settings_service.get_stopwords(user)
-	return [settings_schema.StopWordResponse(id=w.id, word=w.word) for w in words]
+	return [
+		settings_schema.StopWordResponse(id=w.id, word=w.word) for w in words
+	]
 
 
 @router.post(
@@ -250,7 +275,11 @@ async def add_stopword(
 	return settings_schema.StopWordResponse(id=word.id, word=word.word)
 
 
-@router.delete("/stopwords/{word_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Удалить стоп-слово")
+@router.delete(
+	"/stopwords/{word_id}",
+	status_code=status.HTTP_204_NO_CONTENT,
+	summary="Удалить стоп-слово",
+)
 @inject
 async def delete_stopword(
 	word_id: int,
@@ -275,7 +304,12 @@ async def delete_stopword(
 
 # ── Passive Income ────────────────────────────────────────────────────────────
 
-@router.get("/passive-income", response_model=settings_schema.PassiveIncomeResponse, summary="Настройки пассивного дохода")
+
+@router.get(
+	"/passive-income",
+	response_model=settings_schema.PassiveIncomeResponse,
+	summary="Настройки пассивного дохода",
+)
 @inject
 async def get_passive_income(
 	user: CurrentUserDep,
@@ -303,7 +337,11 @@ async def get_passive_income(
 	)
 
 
-@router.patch("/passive-income", response_model=settings_schema.PassiveIncomeResponse, summary="Обновить настройки пассивного дохода")
+@router.patch(
+	"/passive-income",
+	response_model=settings_schema.PassiveIncomeResponse,
+	summary="Обновить настройки пассивного дохода",
+)
 @inject
 async def update_passive_income(
 	body: settings_schema.PassiveIncomeBody,

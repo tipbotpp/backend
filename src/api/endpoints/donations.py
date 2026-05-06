@@ -16,7 +16,12 @@ router = APIRouter(prefix="/donations", route_class=DishkaRoute)
 logger = get_logger().bind(layer="endpoint", module="donations")
 
 
-@router.post("", response_model=donations_schema.DonationCreateResponse, status_code=201, summary="Отправить донат стримеру")
+@router.post(
+	"",
+	response_model=donations_schema.DonationCreateResponse,
+	status_code=201,
+	summary="Отправить донат стримеру",
+)
 @inject
 async def send_donation(
 	body: donations_schema.DonationBody,
@@ -55,7 +60,11 @@ async def send_donation(
 		amount=body.amount,
 		message=body.message,
 	)
-	log.info("donation accepted", donation_id=donation.id, status=donation.status)
+	log.info(
+		"donation accepted",
+		donation_id=donation.id,
+		status=donation.status,
+	)
 	return donations_schema.DonationCreateResponse(
 		donation_id=donation.id,
 		status=donation.status,
@@ -63,7 +72,11 @@ async def send_donation(
 	)
 
 
-@router.get("/session", response_model=donations_schema.SessionStatsResponse, summary="Статистика текущей сессии стримера")
+@router.get(
+	"/session",
+	response_model=donations_schema.SessionStatsResponse,
+	summary="Статистика текущей сессии стримера",
+)
 @inject
 async def get_session_stats(
 	donation_service: FromDishka[DonationService],
@@ -85,7 +98,11 @@ async def get_session_stats(
 	log = logger.bind(request_user_id=user.telegram_id)
 	log.debug("GET /donations/session")
 	stats = await donation_service.get_session_stats(user)
-	log.debug("session stats retrieved", session_id=stats.session_id, donations_count=stats.donations_count)
+	log.debug(
+		"session stats retrieved",
+		session_id=stats.session_id,
+		donations_count=stats.donations_count,
+	)
 	return donations_schema.SessionStatsResponse(
 		session_id=stats.session_id,
 		total_collected=stats.total_collected,
@@ -99,13 +116,20 @@ async def get_session_stats(
 			else None
 		),
 		timeline=[
-			donations_schema.TimelineItemResponse(time=item.time, amount=item.amount)
+			donations_schema.TimelineItemResponse(
+				time=item.time,
+				amount=item.amount,
+			)
 			for item in stats.timeline
 		],
 	)
 
 
-@router.get("/history", response_model=donations_schema.DonationHistoryResponse, summary="История донатов пользователя")
+@router.get(
+	"/history",
+	response_model=donations_schema.DonationHistoryResponse,
+	summary="История донатов пользователя",
+)
 @inject
 async def get_history(
 	filters: Annotated[donations_schema.DonationHistoryFilters, Depends()],
@@ -142,8 +166,18 @@ async def get_history(
 	)
 
 	audio_urls, image_urls = await asyncio.gather(
-		asyncio.gather(*[media_repo.resolve_presigned_url(s3, item.audio_key) for item in items]),
-		asyncio.gather(*[media_repo.resolve_presigned_url(s3, item.image_key) for item in items]),
+		asyncio.gather(
+			*[
+				media_repo.resolve_presigned_url(s3, item.audio_key)
+				for item in items
+			],
+		),
+		asyncio.gather(
+			*[
+				media_repo.resolve_presigned_url(s3, item.image_key)
+				for item in items
+			],
+		),
 	)
 
 	log.debug("history retrieved", total=total, items_count=len(items))
@@ -156,11 +190,22 @@ async def get_history(
 				status=item.status,
 				audio_url=audio_url,
 				image_url=image_url,
-				from_user=donations_schema.DonorResponse(id=item.from_user.id, username=item.from_user.username),
-				to_streamer=donations_schema.DonorResponse(id=item.to_streamer.id, username=item.to_streamer.username),
+				from_user=donations_schema.DonorResponse(
+					id=item.from_user.id,
+					username=item.from_user.username,
+				),
+				to_streamer=donations_schema.DonorResponse(
+					id=item.to_streamer.id,
+					username=item.to_streamer.username,
+				),
 				created_at=item.created_at,
 			)
-			for item, audio_url, image_url in zip(items, audio_urls, image_urls, strict=True)
+			for item, audio_url, image_url in zip(
+				items,
+				audio_urls,
+				image_urls,
+				strict=True,
+			)
 		],
 		total=total,
 		limit=filters.limit,

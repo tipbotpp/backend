@@ -16,7 +16,11 @@ class ServiceProvider(Provider):
 	scope = Scope.REQUEST
 
 	@provide
-	def get_auth_service(self, session: AsyncSession, redis: Redis) -> AuthService:
+	def get_auth_service(
+		self,
+		session: AsyncSession,
+		redis: Redis,
+	) -> AuthService:
 		return AuthService(session, redis)
 
 	@provide
@@ -41,5 +45,9 @@ class ServiceProvider(Provider):
 		return StreamService(session)
 
 	@provide
-	def get_settings_service(self, session: AsyncSession, redis: Redis) -> SettingsService:
+	def get_settings_service(
+		self,
+		session: AsyncSession,
+		redis: Redis,
+	) -> SettingsService:
 		return SettingsService(session, redis)

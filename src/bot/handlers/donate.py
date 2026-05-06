@@ -53,20 +53,35 @@ async def fsm_streamer_id(
 		streamer = await sql.users_repo.get_by_username(session, text)
 
 	if streamer is None or streamer.role != "streamer":
-		await message.answer(DonateText.streamer_not_found(), reply_markup=kb.cancel())
+		await message.answer(
+			DonateText.streamer_not_found(),
+			reply_markup=kb.cancel(),
+		)
 		return
 
-	active_session = await sql.stream_sessions_repo.get_active_by_streamer_id(session, streamer.telegram_id)
+	active_session = await sql.stream_sessions_repo.get_active_by_streamer_id(
+		session,
+		streamer.telegram_id,
+	)
 	if active_session is None:
-		streamer_name = streamer.display_name or streamer.username or str(streamer.telegram_id)
+		streamer_name = (
+			streamer.display_name
+			or streamer.username
+			or str(streamer.telegram_id)
+		)
 		await message.answer(
 			DonateText.streamer_no_active_stream(streamer_name),
 			reply_markup=kb.cancel(),
 		)
 		return
 
-	streamer_name = streamer.display_name or streamer.username or str(streamer.telegram_id)
-	await state.update_data(streamer_id=streamer.telegram_id, streamer_name=streamer_name)
+	streamer_name = (
+		streamer.display_name or streamer.username or str(streamer.telegram_id)
+	)
+	await state.update_data(
+		streamer_id=streamer.telegram_id,
+		streamer_name=streamer_name,
+	)
 	await state.set_state(DonateStates.waiting_amount)
 	await message.answer(
 		DonateText.ask_amount(streamer_name, user.balance),
@@ -75,7 +90,11 @@ async def fsm_streamer_id(
 
 
 @router.message(DonateStates.waiting_amount)
-async def fsm_donate_amount(message: Message, state: FSMContext, user: Users) -> None:
+async def fsm_donate_amount(
+	message: Message,
+	state: FSMContext,
+	user: Users,
+) -> None:
 	text = (message.text or "").strip()
 	if not text.isdigit() or int(text) <= 0:
 		await message.answer(DonateText.invalid_amount())
@@ -97,7 +116,10 @@ async def fsm_donate_amount(message: Message, state: FSMContext, user: Users) ->
 	)
 
 
-@router.callback_query(F.data == "donate:skip_message", DonateStates.waiting_message)
+@router.callback_query(
+	F.data == "donate:skip_message",
+	DonateStates.waiting_message,
+)
 @inject
 async def cb_skip_message(
 	callback: CallbackQuery,
@@ -120,7 +142,13 @@ async def fsm_donate_message(
 	user: Users,
 	donation_service: FromDishka[DonationService],
 ) -> None:
-	await _send_donation(message, state, user, donation_service, message_text=message.text)
+	await _send_donation(
+		message,
+		state,
+		user,
+		donation_service,
+		message_text=message.text,
+	)
 
 
 async def _send_donation(
@@ -146,10 +174,14 @@ async def _send_donation(
 			message=message_text,
 		)
 	except InsufficientBalanceError:
-		await message.answer(DonateText.not_enough_balance(amount, user.balance))
+		await message.answer(
+			DonateText.not_enough_balance(amount, user.balance),
+		)
 		return
 	except (UserNotFoundError, StreamNotActiveError):
-		await message.answer(DonateText.streamer_no_active_stream(streamer_name))
+		await message.answer(
+			DonateText.streamer_no_active_stream(streamer_name),
+		)
 		return
 	except DonationRejectedToxicityError:
 		await message.answer(DonateText.rejected_toxicity())

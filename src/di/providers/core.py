@@ -83,5 +83,3 @@ class CoreProvider(Provider):
 		)
 		yield pool
 		await pool.aclose()
-
-

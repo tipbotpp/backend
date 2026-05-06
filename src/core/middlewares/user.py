@@ -16,7 +16,10 @@ class UserMiddleware(BaseMiddleware):
 	Добавляет объект User в data["user"] для использования в хендлерах.
 	"""
 
-	def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+	def __init__(
+		self,
+		session_factory: async_sessionmaker[AsyncSession],
+	) -> None:
 		self.session_factory = session_factory
 
 	async def __call__(
@@ -47,7 +50,9 @@ class UserMiddleware(BaseMiddleware):
 					except IntegrityError:
 						await session.rollback()
 						user = await session.scalar(
-							select(Users).where(Users.telegram_id == tg_user.id),
+							select(Users).where(
+								Users.telegram_id == tg_user.id,
+							),
 						)
 						if user is None:
 							raise
@@ -56,7 +61,10 @@ class UserMiddleware(BaseMiddleware):
 					if user.username != tg_user.username:
 						user.username = tg_user.username
 						changed = True
-					if not user.display_name_custom and user.display_name != tg_user.full_name:
+					if (
+						not user.display_name_custom
+						and user.display_name != tg_user.full_name
+					):
 						user.display_name = tg_user.full_name
 						changed = True
 					if changed:

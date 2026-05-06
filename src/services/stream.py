@@ -29,7 +29,10 @@ def _widget_url(stream_token: str) -> str:
 
 
 def _ws_url(stream_token: str) -> str:
-	base = cfg.app.public_url.replace("https://", "wss://").replace("http://", "ws://")
+	base = cfg.app.public_url.replace("https://", "wss://").replace(
+		"http://",
+		"ws://",
+	)
 	return f"{base}/ws/{stream_token}"
 
 
@@ -50,7 +53,8 @@ class StreamService:
 			raise StreamerRequiredError()
 
 		existing = await sql.stream_sessions_repo.get_active_by_streamer_id(
-			self._session, user.telegram_id,
+			self._session,
+			user.telegram_id,
 		)
 		if existing is not None:
 			log.error("stream already active", session_id=existing.id)
@@ -66,10 +70,17 @@ class StreamService:
 				passive_income_enabled=passive_income_enabled,
 			),
 		)
-		log.info("stream.start done", session_id=session.id, stream_token=stream_token)
+		log.info(
+			"stream.start done",
+			session_id=session.id,
+			stream_token=stream_token,
+		)
 		return session
 
-	async def stop(self, user: UserDTO) -> tuple[StreamSessionDTO, SessionStatsDTO]:
+	async def stop(
+		self,
+		user: UserDTO,
+	) -> tuple[StreamSessionDTO, SessionStatsDTO]:
 		log = logger.bind(request_user_id=user.telegram_id)
 		log.info("stream.stop started")
 
@@ -78,17 +89,25 @@ class StreamService:
 			raise StreamerRequiredError()
 
 		active = await sql.stream_sessions_repo.get_active_by_streamer_id(
-			self._session, user.telegram_id,
+			self._session,
+			user.telegram_id,
 		)
 		if active is None:
 			log.error("no active stream session")
 			raise StreamNotActiveError()
 
 		ended_at = local_time.now()
-		stopped = await sql.stream_sessions_repo.deactivate(self._session, active.id, ended_at)
+		stopped = await sql.stream_sessions_repo.deactivate(
+			self._session,
+			active.id,
+			ended_at,
+		)
 		if stopped is None:
 			raise StreamNotActiveError()
-		stats = await sql.donations_repo.get_session_stats(self._session, active.id)
+		stats = await sql.donations_repo.get_session_stats(
+			self._session,
+			active.id,
+		)
 
 		log.info("stream.stop done", session_id=active.id)
 		return stopped, stats
@@ -97,7 +116,8 @@ class StreamService:
 		log = logger.bind(request_user_id=user.telegram_id)
 		log.debug("stream.get_status started")
 		active = await sql.stream_sessions_repo.get_active_by_streamer_id(
-			self._session, user.telegram_id,
+			self._session,
+			user.telegram_id,
 		)
 		log.debug("stream.get_status done", is_live=active is not None)
 		return active

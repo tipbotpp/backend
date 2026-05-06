@@ -21,7 +21,10 @@ async def jwks() -> JSONResponse:
 	from jwt.algorithms import RSAAlgorithm  # noqa: PLC0415
 
 	jwk = RSAAlgorithm.to_jwk(
-		cast(RSAPublicKey, load_pem_public_key(cfg.auth.jwt_public_key.encode())),
+		cast(
+			RSAPublicKey,
+			load_pem_public_key(cfg.auth.jwt_public_key.encode()),
+		),
 		as_dict=True,
 	)
 	jwk["use"] = "sig"

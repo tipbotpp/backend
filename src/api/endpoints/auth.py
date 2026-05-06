@@ -15,7 +15,11 @@ router = APIRouter(prefix="/auth", route_class=DishkaRoute)
 logger = get_logger().bind(layer="endpoint", module="auth")
 
 
-@router.post("/telegram", response_model=auth_schema.AuthResponse, summary="Авторизация через Telegram Mini App")
+@router.post(
+	"/telegram",
+	response_model=auth_schema.AuthResponse,
+	summary="Авторизация через Telegram Mini App",
+)
 @inject
 async def telegram_auth(
 	body: auth_schema.TelegramAuthBody,

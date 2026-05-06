@@ -4,6 +4,7 @@ from .base import BaseHTTPException
 
 # ── Auth ─────────────────────────────────────────────────────────────────────
 
+
 class InvalidInitDataError(BaseHTTPException):
 	status_code = status.HTTP_401_UNAUTHORIZED
 	detail = "Невалидный initData"
@@ -20,6 +21,7 @@ class TokenRevokedError(BaseHTTPException):
 
 
 # ── Common ────────────────────────────────────────────────────────────────────
+
 
 class UnauthorizedError(BaseHTTPException):
 	status_code = status.HTTP_401_UNAUTHORIZED
@@ -42,6 +44,7 @@ class ConflictError(BaseHTTPException):
 
 
 # ── Users ─────────────────────────────────────────────────────────────────────
+
 
 class UserNotFoundError(BaseHTTPException):
 	status_code = status.HTTP_404_NOT_FOUND
@@ -70,6 +73,7 @@ class ViewerRequiredError(BaseHTTPException):
 
 # ── Stream ────────────────────────────────────────────────────────────────────
 
+
 class StreamAlreadyActiveError(BaseHTTPException):
 	status_code = status.HTTP_409_CONFLICT
 	detail = "Стрим уже запущен"
@@ -81,6 +85,7 @@ class StreamNotActiveError(BaseHTTPException):
 
 
 # ── Donations ─────────────────────────────────────────────────────────────────
+
 
 class InsufficientBalanceError(BaseHTTPException):
 	status_code = status.HTTP_422_UNPROCESSABLE_ENTITY

@@ -7,6 +7,7 @@
 4. Telegram-уведомление стримеру
 5. Вернуть результат — FastAPI WS handler сам сгенерирует presigned URLs и отправит new_alert/goal_updated
 """
+
 import asyncio
 
 import httpx
@@ -95,7 +96,10 @@ async def process_donation_media(
 	else:
 		media_tasks.append(asyncio.sleep(0))
 
-	tts_result, image_result = await asyncio.gather(*media_tasks, return_exceptions=True)
+	tts_result, image_result = await asyncio.gather(
+		*media_tasks,
+		return_exceptions=True,
+	)
 
 	if isinstance(tts_result, BaseException):
 		log.error("tts failed", error=str(tts_result))

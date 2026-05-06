@@ -1,10 +1,13 @@
 import pytest
 
 
-def test_role_access_control():
+class ForbiddenError(Exception):
+	pass
 
-    role = "USER"
 
-    with pytest.raises(Exception):
-        if role != "ADMIN":
-            raise Exception("Forbidden")
+def test_role_access_control() -> None:
+	role = "USER"
+
+	with pytest.raises(ForbiddenError):
+		if role != "ADMIN":
+			raise ForbiddenError("Forbidden")

@@ -14,13 +14,20 @@ class BalanceService:
 		self._session = session
 
 	async def topup(self, user: UserDTO, amount: int) -> tuple[int, int]:
-		log = logger.bind(request_user_id=user.telegram_id, request_amount=amount)
+		log = logger.bind(
+			request_user_id=user.telegram_id,
+			request_amount=amount,
+		)
 		log.info("balance.topup started", previous_balance=user.balance)
 
 		previous_balance = user.balance
 		new_balance = previous_balance + amount
 
-		await sql.users_repo.update_balance(self._session, user.telegram_id, new_balance)
+		await sql.users_repo.update_balance(
+			self._session,
+			user.telegram_id,
+			new_balance,
+		)
 		await sql.balance_transactions_repo.create(
 			self._session,
 			BalanceTransactionCreateDTO(

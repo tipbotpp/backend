@@ -32,7 +32,10 @@ async def get_by_telegram_id(
 	return map_model(instance, UserDTO)
 
 
-async def get_by_username(session: AsyncSession, username: str) -> UserDTO | None:
+async def get_by_username(
+	session: AsyncSession,
+	username: str,
+) -> UserDTO | None:
 	result = await session.execute(
 		select(Users).where(Users.username.ilike(username)),
 	)
@@ -123,7 +126,11 @@ async def update_profile_custom(
 	return map_model(instance, UserDTO)
 
 
-async def update_balance(session: AsyncSession, telegram_id: int, new_balance: int) -> UserDTO | None:
+async def update_balance(
+	session: AsyncSession,
+	telegram_id: int,
+	new_balance: int,
+) -> UserDTO | None:
 	instance = await session.get(Users, telegram_id)
 	if instance is None:
 		return None
@@ -133,7 +140,11 @@ async def update_balance(session: AsyncSession, telegram_id: int, new_balance: i
 	return map_model(instance, UserDTO)
 
 
-async def increment_balance(session: AsyncSession, telegram_id: int, amount: int) -> int | None:
+async def increment_balance(
+	session: AsyncSession,
+	telegram_id: int,
+	amount: int,
+) -> int | None:
 	"""Атомарно прибавляет amount к балансу. Возвращает новый баланс или None если юзер не найден."""
 	result = await session.execute(
 		update(Users)
@@ -144,7 +155,11 @@ async def increment_balance(session: AsyncSession, telegram_id: int, amount: int
 	return result.scalar_one_or_none()
 
 
-async def decrement_balance(session: AsyncSession, telegram_id: int, amount: int) -> int | None:
+async def decrement_balance(
+	session: AsyncSession,
+	telegram_id: int,
+	amount: int,
+) -> int | None:
 	"""Атомарно вычитает amount из баланса только если баланс >= amount.
 	Возвращает новый баланс при успехе или None если баланса недостаточно / юзер не найден."""
 	result = await session.execute(
@@ -157,34 +172,34 @@ async def decrement_balance(session: AsyncSession, telegram_id: int, amount: int
 
 
 async def get_active_streamers(
-    session: AsyncSession,
-    search: str | None = None,
-    limit: int = 20,
-    offset: int = 0,
+	session: AsyncSession,
+	search: str | None = None,
+	limit: int = 20,
+	offset: int = 0,
 ) -> tuple[list[UserDTO], int]:
-    """Стримеры с активной сессией. Возвращает (items, total)."""
-    base = (
-        select(Users)
-        .join(StreamSessions, StreamSessions.streamer_id == Users.telegram_id)
-        .where(
-            Users.role == UserRole.STREAMER,
-            StreamSessions.is_active.is_(True),
-        )
-        .distinct()
-    )
-    if search:
-        pattern = f"%{search}%"
-        base = base.where(
-            Users.username.ilike(pattern) | Users.display_name.ilike(pattern),
-        )
+	"""Стримеры с активной сессией. Возвращает (items, total)."""
+	base = (
+		select(Users)
+		.join(StreamSessions, StreamSessions.streamer_id == Users.telegram_id)
+		.where(
+			Users.role == UserRole.STREAMER,
+			StreamSessions.is_active.is_(True),
+		)
+		.distinct()
+	)
+	if search:
+		pattern = f"%{search}%"
+		base = base.where(
+			Users.username.ilike(pattern) | Users.display_name.ilike(pattern),
+		)
 
-    total_result = await session.execute(
-        select(func.count()).select_from(base.subquery()),
-    )
-    total = total_result.scalar_one()
+	total_result = await session.execute(
+		select(func.count()).select_from(base.subquery()),
+	)
+	total = total_result.scalar_one()
 
-    result = await session.execute(base.limit(limit).offset(offset))
-    return [map_model(row, UserDTO) for row in result.scalars().all()], total
+	result = await session.execute(base.limit(limit).offset(offset))
+	return [map_model(row, UserDTO) for row in result.scalars().all()], total
 
 
 async def get_all_viewers(session: AsyncSession) -> list[UserDTO]:

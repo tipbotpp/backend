@@ -16,7 +16,11 @@ router = APIRouter(prefix="/stream", route_class=DishkaRoute)
 logger = get_logger().bind(layer="endpoint", module="stream")
 
 
-@router.post("/start", response_model=stream_schema.StreamStartResponse, summary="Начать стрим")
+@router.post(
+	"/start",
+	response_model=stream_schema.StreamStartResponse,
+	summary="Начать стрим",
+)
 @inject
 async def start_stream(
 	body: stream_schema.StreamStartBody,
@@ -54,7 +58,11 @@ async def start_stream(
 	)
 
 
-@router.post("/stop", response_model=stream_schema.StreamStopResponse, summary="Завершить стрим")
+@router.post(
+	"/stop",
+	response_model=stream_schema.StreamStopResponse,
+	summary="Завершить стрим",
+)
 @inject
 async def stop_stream(
 	stream_service: FromDishka[StreamService],
@@ -84,12 +92,19 @@ async def stop_stream(
 		stopped.stream_token,
 		{"type": "stream_stopped", "session_id": stopped.id},
 	)
-	log.info("stream_stopped pushed to ws queue", stream_token=stopped.stream_token)
+	log.info(
+		"stream_stopped pushed to ws queue",
+		stream_token=stopped.stream_token,
+	)
 
 	ended_at = stopped.ended_at or local_time.now()
 	duration_seconds = int((ended_at - stopped.started_at).total_seconds())
 
-	log.info("stream stopped", session_id=stopped.id, duration_seconds=duration_seconds)
+	log.info(
+		"stream stopped",
+		session_id=stopped.id,
+		duration_seconds=duration_seconds,
+	)
 	return stream_schema.StreamStopResponse(
 		session_id=stopped.id,
 		total_collected=stats.total_collected,
@@ -99,7 +114,11 @@ async def stop_stream(
 	)
 
 
-@router.get("/status", response_model=stream_schema.StreamStatusResponse, summary="Статус текущего стрима")
+@router.get(
+	"/status",
+	response_model=stream_schema.StreamStatusResponse,
+	summary="Статус текущего стрима",
+)
 @inject
 async def stream_status(
 	stream_service: FromDishka[StreamService],

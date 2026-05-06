@@ -11,9 +11,14 @@ from src.schemas.dataclasses.settings import (
 from src.utils.mappers import map_model
 
 
-async def get_by_streamer_id(session: AsyncSession, streamer_id: int) -> PassiveIncomeSettingsDTO | None:
+async def get_by_streamer_id(
+	session: AsyncSession,
+	streamer_id: int,
+) -> PassiveIncomeSettingsDTO | None:
 	result = await session.execute(
-		select(PassiveIncomeSettings).where(PassiveIncomeSettings.streamer_id == streamer_id),
+		select(PassiveIncomeSettings).where(
+			PassiveIncomeSettings.streamer_id == streamer_id,
+		),
 	)
 	instance = result.scalar_one_or_none()
 	if instance is None:
@@ -21,19 +26,33 @@ async def get_by_streamer_id(session: AsyncSession, streamer_id: int) -> Passive
 	return map_model(instance, PassiveIncomeSettingsDTO)
 
 
-async def get_by_id(session: AsyncSession, id: int) -> PassiveIncomeSettingsDTO | None:
+async def get_by_id(
+	session: AsyncSession,
+	id: int,
+) -> PassiveIncomeSettingsDTO | None:
 	instance = await session.get(PassiveIncomeSettings, id)
 	if instance is None:
 		return None
 	return map_model(instance, PassiveIncomeSettingsDTO)
 
 
-async def get_by_ids(session: AsyncSession, ids: list[int]) -> list[PassiveIncomeSettingsDTO]:
-	result = await session.execute(select(PassiveIncomeSettings).where(PassiveIncomeSettings.id.in_(ids)))
-	return [map_model(row, PassiveIncomeSettingsDTO) for row in result.scalars().all()]
+async def get_by_ids(
+	session: AsyncSession,
+	ids: list[int],
+) -> list[PassiveIncomeSettingsDTO]:
+	result = await session.execute(
+		select(PassiveIncomeSettings).where(PassiveIncomeSettings.id.in_(ids)),
+	)
+	return [
+		map_model(row, PassiveIncomeSettingsDTO)
+		for row in result.scalars().all()
+	]
 
 
-async def create(session: AsyncSession, dto: PassiveIncomeSettingsCreateDTO) -> PassiveIncomeSettingsDTO:
+async def create(
+	session: AsyncSession,
+	dto: PassiveIncomeSettingsCreateDTO,
+) -> PassiveIncomeSettingsDTO:
 	instance = PassiveIncomeSettings(**dataclasses.asdict(dto))
 	session.add(instance)
 	await session.flush()
@@ -47,7 +66,9 @@ async def update(
 	**fields: object,
 ) -> PassiveIncomeSettingsDTO | None:
 	result = await session.execute(
-		select(PassiveIncomeSettings).where(PassiveIncomeSettings.streamer_id == streamer_id),
+		select(PassiveIncomeSettings).where(
+			PassiveIncomeSettings.streamer_id == streamer_id,
+		),
 	)
 	instance = result.scalar_one_or_none()
 	if instance is None:

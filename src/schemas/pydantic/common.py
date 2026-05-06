@@ -42,5 +42,14 @@ class Paginated(BaseModel, Generic[T]):  # noqa: UP046
 
 
 class PaginationFilters(BaseSchema):
-	limit: int = Query(default=cfg.app.default_limit, ge=1, le=cfg.app.maximum_limit, description="Количество элементов")
-	offset: int = Query(default=cfg.app.default_offset, ge=0, description="Смещение")
+	limit: int = Query(
+		default=cfg.app.default_limit,
+		ge=1,
+		le=cfg.app.maximum_limit,
+		description="Количество элементов",
+	)
+	offset: int = Query(
+		default=cfg.app.default_offset,
+		ge=0,
+		description="Смещение",
+	)

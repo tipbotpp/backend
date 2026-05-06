@@ -32,7 +32,11 @@ _DEFAULT_ALERT_STYLE = AlertSettingsDTO(
 )
 
 
-@router.get("/{stream_token}", response_model=WidgetResponse, summary="Данные виджета для OBS Browser Source")
+@router.get(
+	"/{stream_token}",
+	response_model=WidgetResponse,
+	summary="Данные виджета для OBS Browser Source",
+)
 @inject
 async def get_widget(
 	stream_token: str,
@@ -56,17 +60,26 @@ async def get_widget(
 	log = logger.bind(stream_token=stream_token)
 	log.debug("GET /widget/{stream_token}")
 
-	stream_session = await sql.stream_sessions_repo.get_by_stream_token(session, stream_token)
+	stream_session = await sql.stream_sessions_repo.get_by_stream_token(
+		session,
+		stream_token,
+	)
 	if stream_session is None or not stream_session.is_active:
 		log.error("widget: stream not found or inactive")
 		raise NotFoundError()
 
-	streamer = await sql.users_repo.get_by_telegram_id(session, stream_session.streamer_id)
+	streamer = await sql.users_repo.get_by_telegram_id(
+		session,
+		stream_session.streamer_id,
+	)
 	if streamer is None:
 		log.error("widget: streamer not found")
 		raise NotFoundError()
 
-	alert = await sql.alert_settings_repo.get_by_streamer_id(session, stream_session.streamer_id)
+	alert = await sql.alert_settings_repo.get_by_streamer_id(
+		session,
+		stream_session.streamer_id,
+	)
 	style = alert or _DEFAULT_ALERT_STYLE
 
 	log.info("widget served", session_id=stream_session.id)

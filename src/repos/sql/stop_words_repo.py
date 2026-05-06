@@ -8,8 +8,13 @@ from src.schemas.dataclasses.settings import StopWordCreateDTO, StopWordDTO
 from src.utils.mappers import map_model
 
 
-async def get_by_streamer_id(session: AsyncSession, streamer_id: int) -> list[StopWordDTO]:
-	result = await session.execute(select(StopWords).where(StopWords.streamer_id == streamer_id))
+async def get_by_streamer_id(
+	session: AsyncSession,
+	streamer_id: int,
+) -> list[StopWordDTO]:
+	result = await session.execute(
+		select(StopWords).where(StopWords.streamer_id == streamer_id),
+	)
 	return [map_model(row, StopWordDTO) for row in result.scalars().all()]
 
 
@@ -20,8 +25,13 @@ async def get_by_id(session: AsyncSession, id: int) -> StopWordDTO | None:
 	return map_model(instance, StopWordDTO)
 
 
-async def get_by_ids(session: AsyncSession, ids: list[int]) -> list[StopWordDTO]:
-	result = await session.execute(select(StopWords).where(StopWords.id.in_(ids)))
+async def get_by_ids(
+	session: AsyncSession,
+	ids: list[int],
+) -> list[StopWordDTO]:
+	result = await session.execute(
+		select(StopWords).where(StopWords.id.in_(ids)),
+	)
 	return [map_model(row, StopWordDTO) for row in result.scalars().all()]
 
 

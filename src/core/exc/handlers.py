@@ -24,7 +24,9 @@ error_router = Router()
 async def handle_bot_error(event: ErrorEvent) -> None:
 	logger.error(
 		"Unhandled bot error",
-		update=event.update.model_dump(exclude_none=True) if event.update else None,
+		update=event.update.model_dump(exclude_none=True)
+		if event.update
+		else None,
 		error=str(event.exception),
 		exc_info=event.exception,
 	)
@@ -142,12 +144,18 @@ class ExceptionHandlers:
 	@classmethod
 	def register(cls, app: FastAPI) -> None:
 		handler = cls()
-		app.add_exception_handler(ValueError, cast(ExceptionHandler, handler.handle_value_error))
+		app.add_exception_handler(
+			ValueError,
+			cast(ExceptionHandler, handler.handle_value_error),
+		)
 		app.add_exception_handler(
 			HTTPStatusError,
 			cast(ExceptionHandler, handler.handle_http_status_error),
 		)
-		app.add_exception_handler(RequestError, cast(ExceptionHandler, handler.handle_request_error))
+		app.add_exception_handler(
+			RequestError,
+			cast(ExceptionHandler, handler.handle_request_error),
+		)
 		app.add_exception_handler(
 			exc.ArgumentError,
 			cast(ExceptionHandler, handler.handle_argument_error),
@@ -160,5 +168,11 @@ class ExceptionHandlers:
 			exc.IntegrityError,
 			cast(ExceptionHandler, handler.handle_integrity_error),
 		)
-		app.add_exception_handler(PyJWTError, cast(ExceptionHandler, handler.handle_jwt_error))
-		app.add_exception_handler(Exception, cast(ExceptionHandler, handler.handle_generic_exception))
+		app.add_exception_handler(
+			PyJWTError,
+			cast(ExceptionHandler, handler.handle_jwt_error),
+		)
+		app.add_exception_handler(
+			Exception,
+			cast(ExceptionHandler, handler.handle_generic_exception),
+		)

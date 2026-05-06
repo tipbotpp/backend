@@ -27,7 +27,11 @@ class StreamText:
 		)
 
 	@staticmethod
-	def stopped(total_collected: int, donations_count: int, duration_seconds: int) -> str:
+	def stopped(
+		total_collected: int,
+		donations_count: int,
+		duration_seconds: int,
+	) -> str:
 		hours, remainder = divmod(duration_seconds, 3600)
 		minutes = remainder // 60
 		duration_str = f"{hours}ч {minutes}м" if hours else f"{minutes}м"

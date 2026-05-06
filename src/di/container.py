@@ -8,10 +8,10 @@ from .providers.services import ServiceProvider
 
 
 def get_container() -> AsyncContainer:
-    return make_async_container(
-        FastapiProvider(),
-        CoreProvider(),
-        RepositoryProvider(),
-        ServiceProvider(),
-        AuthProvider(),
-    )
+	return make_async_container(
+		FastapiProvider(),
+		CoreProvider(),
+		RepositoryProvider(),
+		ServiceProvider(),
+		AuthProvider(),
+	)

@@ -8,7 +8,10 @@ from src.schemas.dataclasses.settings import StreamGoalCreateDTO, StreamGoalDTO
 from src.utils.mappers import map_model
 
 
-async def get_by_streamer_id(session: AsyncSession, streamer_id: int) -> StreamGoalDTO | None:
+async def get_by_streamer_id(
+	session: AsyncSession,
+	streamer_id: int,
+) -> StreamGoalDTO | None:
 	result = await session.execute(
 		select(StreamGoals).where(StreamGoals.streamer_id == streamer_id),
 	)
@@ -25,12 +28,20 @@ async def get_by_id(session: AsyncSession, id: int) -> StreamGoalDTO | None:
 	return map_model(instance, StreamGoalDTO)
 
 
-async def get_by_ids(session: AsyncSession, ids: list[int]) -> list[StreamGoalDTO]:
-	result = await session.execute(select(StreamGoals).where(StreamGoals.id.in_(ids)))
+async def get_by_ids(
+	session: AsyncSession,
+	ids: list[int],
+) -> list[StreamGoalDTO]:
+	result = await session.execute(
+		select(StreamGoals).where(StreamGoals.id.in_(ids)),
+	)
 	return [map_model(row, StreamGoalDTO) for row in result.scalars().all()]
 
 
-async def create(session: AsyncSession, dto: StreamGoalCreateDTO) -> StreamGoalDTO:
+async def create(
+	session: AsyncSession,
+	dto: StreamGoalCreateDTO,
+) -> StreamGoalDTO:
 	instance = StreamGoals(**dataclasses.asdict(dto))
 	session.add(instance)
 	await session.flush()
@@ -43,7 +54,9 @@ async def update(
 	streamer_id: int,
 	**fields: object,
 ) -> StreamGoalDTO | None:
-	result = await session.execute(select(StreamGoals).where(StreamGoals.streamer_id == streamer_id))
+	result = await session.execute(
+		select(StreamGoals).where(StreamGoals.streamer_id == streamer_id),
+	)
 	instance = result.scalar_one_or_none()
 	if instance is None:
 		return None

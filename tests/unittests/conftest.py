@@ -1,41 +1,34 @@
-import pytest
 import asyncio
+from collections.abc import AsyncGenerator, Generator
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-
+import pytest
+from sqlalchemy.ext.asyncio import (
+	AsyncSession,
+	async_sessionmaker,
+	create_async_engine,
+)
 from src.models import Base
-from src.core.db import get_session
 
+DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
-
-engine = create_async_engine(TEST_DB_URL, echo=False)
+engine = create_async_engine(DATABASE_URL, echo=False)
 TestingSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
-# event loop for pytest-asyncio
 @pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
+def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+	loop = asyncio.new_event_loop()
+	yield loop
+	loop.close()
 
 
-# create tables once
 @pytest.fixture(scope="session")
-async def setup_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    yield
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+async def setup_db() -> None:
+	async with engine.begin() as conn:
+		await conn.run_sync(Base.metadata.create_all)
 
 
-# DB session per test
 @pytest.fixture
-async def session(setup_db):
-    async with TestingSessionLocal() as session:
-        yield session
-        await session.rollback()
+async def session(setup_db: None) -> AsyncGenerator[AsyncSession, None]:
+	async with TestingSessionLocal() as session:
+		yield session

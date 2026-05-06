@@ -9,6 +9,7 @@
 5. Записать BalanceTransaction.
 6. Отправить Telegram-уведомление.
 """
+
 from __future__ import annotations
 
 from aiogram import Bot
@@ -29,102 +30,141 @@ _DEFAULT_INTERVAL_MINUTES = 5
 
 
 def _cooldown_key(session_id: int) -> str:
-    return f"{_COOLDOWN_PREFIX}{session_id}"
+	return f"{_COOLDOWN_PREFIX}{session_id}"
 
 
 async def passive_income_task(ctx: dict) -> None:
-    """Cron-таска: начислить пассивный доход зрителям всех активных стримов."""
-    session_factory: async_sessionmaker = ctx["session_factory"]
-    redis: Redis = ctx["redis"]
-    bot: Bot = ctx["bot"]
+	"""Cron-таска: начислить пассивный доход зрителям всех активных стримов."""
+	session_factory: async_sessionmaker = ctx["session_factory"]
+	redis: Redis = ctx["redis"]
+	bot: Bot = ctx["bot"]
 
-    log = logger.bind()
-    log.info("passive_income_task started")
+	log = logger.bind()
+	log.info("passive_income_task started")
 
-    async with session_factory() as session:
-        async with session.begin():
-            active_sessions = await sql.stream_sessions_repo.get_all_active_with_passive_income(session)
+	async with session_factory() as session:
+		async with session.begin():
+			active_sessions = await sql.stream_sessions_repo.get_all_active_with_passive_income(
+				session,
+			)
 
-    if not active_sessions:
-        log.debug("passive_income_task: no active sessions with passive income")
-        return
+	if not active_sessions:
+		log.debug(
+			"passive_income_task: no active sessions with passive income",
+		)
+		return
 
-    log.info("active passive income sessions", count=len(active_sessions))
+	log.info("active passive income sessions", count=len(active_sessions))
 
-    for stream_session in active_sessions:
-        session_log = log.bind(session_id=stream_session.id)
+	for stream_session in active_sessions:
+		session_log = log.bind(session_id=stream_session.id)
 
-        # ── 1. Получаем настройки СНАЧАЛА — они нужны для TTL cooldown ────────
-        async with session_factory() as session:
-            async with session.begin():
-                pi_settings = await sql.passive_income_settings_repo.get_by_streamer_id(
-                    session, stream_session.streamer_id,
-                )
-                streamer = await sql.users_repo.get_by_telegram_id(
-                    session, stream_session.streamer_id,
-                )
+		# ── 1. Получаем настройки СНАЧАЛА — они нужны для TTL cooldown ────────
+		async with session_factory() as session:
+			async with session.begin():
+				pi_settings = (
+					await sql.passive_income_settings_repo.get_by_streamer_id(
+						session,
+						stream_session.streamer_id,
+					)
+				)
+				streamer = await sql.users_repo.get_by_telegram_id(
+					session,
+					stream_session.streamer_id,
+				)
 
-        coins = pi_settings.coins_per_interval if pi_settings else _DEFAULT_COINS
-        interval_seconds = (
-            pi_settings.interval_minutes if pi_settings else _DEFAULT_INTERVAL_MINUTES
-        ) * 60
+		coins = (
+			pi_settings.coins_per_interval if pi_settings else _DEFAULT_COINS
+		)
+		interval_seconds = (
+			pi_settings.interval_minutes
+			if pi_settings
+			else _DEFAULT_INTERVAL_MINUTES
+		) * 60
 
-        # ── 2. Атомарный SET NX: только один воркер пройдёт за интервал ───────
-        acquired = await redis.set(
-            _cooldown_key(stream_session.id), "1", ex=interval_seconds, nx=True,
-        )
-        if not acquired:
-            session_log.debug("passive income cooldown active")
-            continue
+		# ── 2. Атомарный SET NX: только один воркер пройдёт за интервал ───────
+		acquired = await redis.set(
+			_cooldown_key(stream_session.id),
+			"1",
+			ex=interval_seconds,
+			nx=True,
+		)
+		if not acquired:
+			session_log.debug("passive income cooldown active")
+			continue
 
-        # ── 3. Зрители из Redis presence ─────────────────────────────────────
-        viewer_ids = await viewer_presence_repo.get_viewer_ids(redis, stream_session.id)
-        if not viewer_ids:
-            session_log.debug("no viewers connected, skipping payout")
-            continue
+		# ── 3. Зрители из Redis presence ─────────────────────────────────────
+		viewer_ids = await viewer_presence_repo.get_viewer_ids(
+			redis,
+			stream_session.id,
+		)
+		if not viewer_ids:
+			session_log.debug("no viewers connected, skipping payout")
+			continue
 
-        streamer_name = (
-            streamer.display_name or streamer.username or "Стримера"
-            if streamer else "Стримера"
-        )
+		streamer_name = (
+			streamer.display_name or streamer.username or "Стримера"
+			if streamer
+			else "Стримера"
+		)
 
-        session_log.info("crediting passive income", coins=coins, viewers_count=len(viewer_ids))
+		session_log.info(
+			"crediting passive income",
+			coins=coins,
+			viewers_count=len(viewer_ids),
+		)
 
-        # ── 4-6. Начисляем каждому зрителю ───────────────────────────────────
-        for viewer_id in viewer_ids:
-            try:
-                async with session_factory() as session:
-                    async with session.begin():
-                        # Атомарный инкремент — нет race condition с параллельными воркерами
-                        new_balance = await sql.users_repo.increment_balance(
-                            session, viewer_id, coins,
-                        )
-                        if new_balance is None:
-                            session_log.error("viewer not found in db", viewer_id=viewer_id)
-                            continue
-                        await sql.balance_transactions_repo.create(
-                            session,
-                            BalanceTransactionCreateDTO(
-                                user_id=viewer_id,
-                                amount=coins,
-                                type=BalanceTransactionType.PASSIVE_INCOME,
-                            ),
-                        )
+		# ── 4-6. Начисляем каждому зрителю ───────────────────────────────────
+		for viewer_id in viewer_ids:
+			try:
+				async with session_factory() as session:
+					async with session.begin():
+						# Атомарный инкремент — нет race condition с параллельными воркерами
+						new_balance = await sql.users_repo.increment_balance(
+							session,
+							viewer_id,
+							coins,
+						)
+						if new_balance is None:
+							session_log.error(
+								"viewer not found in db",
+								viewer_id=viewer_id,
+							)
+							continue
+						await sql.balance_transactions_repo.create(
+							session,
+							BalanceTransactionCreateDTO(
+								user_id=viewer_id,
+								amount=coins,
+								type=BalanceTransactionType.PASSIVE_INCOME,
+							),
+						)
 
-                try:
-                    await bot.send_message(
-                        chat_id=viewer_id,
-                        text=(
-                            f"🎁 <b>+{coins} монет</b> за просмотр стрима {streamer_name}!\n"
-                            f"Текущий баланс: {new_balance} монет"
-                        ),
-                    )
-                except Exception as e:
-                    session_log.error("notification failed", viewer_id=viewer_id, error=str(e))
+				try:
+					await bot.send_message(
+						chat_id=viewer_id,
+						text=(
+							f"🎁 <b>+{coins} монет</b> за просмотр стрима {streamer_name}!\n"
+							f"Текущий баланс: {new_balance} монет"
+						),
+					)
+				except Exception as e:
+					session_log.error(
+						"notification failed",
+						viewer_id=viewer_id,
+						error=str(e),
+					)
 
-            except Exception as e:
-                session_log.error("credit failed", viewer_id=viewer_id, error=str(e))
+			except Exception as e:
+				session_log.error(
+					"credit failed",
+					viewer_id=viewer_id,
+					error=str(e),
+				)
 
-        session_log.info("passive income payout done", interval_seconds=interval_seconds)
+		session_log.info(
+			"passive income payout done",
+			interval_seconds=interval_seconds,
+		)
 
-    log.info("passive_income_task done")
+	log.info("passive_income_task done")
