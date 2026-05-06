@@ -2,10 +2,10 @@
 
 Последовательность:
 1. TTS (если включён и есть текст)
-2. Image generation (если включён и есть текст) — пока заглушка
+2. Image generation (если включён и есть текст)
 3. Обновить донат в БД (audio_key, image_key, status=delivered)
-4. WebSocket push стримеру — TODO: реализовать в спринте WS
-5. Telegram-уведомление стримеру
+4. Telegram-уведомление стримеру
+5. Вернуть результат — FastAPI WS handler сам сгенерирует presigned URLs и отправит new_alert/goal_updated
 """
 import asyncio
 
@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from src.gateways import ml as ml_gateway
 from src.repos import sql
+from src.schemas.dataclasses.donations import DonationMediaResultDTO
 from src.schemas.dataclasses.ml import ImageRequestDTO, TTSRequestDTO
 from src.services.logger import get_logger
 
@@ -32,13 +33,24 @@ async def process_donation_media(
 	tts_enabled: bool,
 	image_enabled: bool,
 	streamer_id: int,
-) -> None:
+	stream_token: str,
+	alert_bg_color: str,
+	alert_text_color: str,
+	alert_font: str,
+	alert_duration_sec: int,
+) -> DonationMediaResultDTO:
+	"""Обрабатывает медиа-артефакты доната.
+
+	Возвращает результат с raw S3 ключами — FastAPI WS handler сам
+	сгенерирует presigned URLs и пушит события в WebSocket.
+	"""
 	log = logger.bind(
 		donation_id=donation_id,
 		donor_name=donor_name,
 		request_amount=amount,
 		tts_enabled=tts_enabled,
 		image_enabled=image_enabled,
+		stream_token=stream_token,
 	)
 	log.info("process_donation_media started")
 
@@ -109,17 +121,6 @@ async def process_donation_media(
 			)
 	log.info("donation updated", status="delivered")
 
-	# TODO: отправить new_alert в WebSocket стримера после реализации WS-эндпоинта
-	# await ws_manager.push_alert(streamer_id, {
-	#     "type": "new_alert",
-	#     "donation_id": donation_id,
-	#     "donor_name": donor_name,
-	#     "amount": amount,
-	#     "message": text,
-	#     "audio_url": audio_key,
-	#     "image_url": image_key,
-	# })
-
 	# ── Telegram-уведомление стримеру ────────────────────────────────────────
 	notification = _build_notification(donor_name, amount, text)
 	try:
@@ -129,6 +130,20 @@ async def process_donation_media(
 		log.error("telegram notification failed", error=str(e))
 
 	log.info("process_donation_media done")
+
+	return DonationMediaResultDTO(
+		donation_id=donation_id,
+		donor_name=donor_name,
+		amount=amount,
+		message=text,
+		streamer_id=streamer_id,
+		audio_key=audio_key,
+		image_key=image_key,
+		alert_bg_color=alert_bg_color,
+		alert_text_color=alert_text_color,
+		alert_font=alert_font,
+		alert_duration_sec=alert_duration_sec,
+	)
 
 
 def _build_notification(donor_name: str, amount: int, text: str | None) -> str:

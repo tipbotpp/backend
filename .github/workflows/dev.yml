@@ -34,78 +34,107 @@ jobs:
       - name: Add known hosts
         run: ssh-keyscan -p ${{ secrets.DEV_SSH_PORT }} -H ${{ secrets.DEV_SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Connect and Pull
+      - name: Deploy to server
         run: |
-          ssh -A -p ${{ secrets.DEV_SSH_PORT }} ${{ secrets.DEV_SSH_USER }}@${{ secrets.DEV_SSH_HOST }} << 'EOF'
-          cd ${{ secrets.DEV_WORK_DIR }}
-          git checkout ${{ secrets.DEV_BRANCH }}
-          export POSTGRES_USER="${{ secrets.DEV_POSTGRES_USERNAME }}"
-          export POSTGRES_PASSWORD="${{ secrets.DEV_POSTGRES_PASSWORD }}"
-          export POSTGRES_DB="${{ secrets.DEV_POSTGRES_DB }}"
-          export MINIO_ROOT_USER="${{ secrets.MINIO_ROOT_USER }}"
-          export MINIO_ROOT_PASSWORD="${{ secrets.MINIO_ROOT_PASSWORD }}"
-          export DOCKER_BUILDKIT=1
-          git pull --rebase
+          ssh -A -p ${{ secrets.DEV_SSH_PORT }} ${{ secrets.DEV_SSH_USER }}@${{ secrets.DEV_SSH_HOST }} << EOF
+            cd ${{ secrets.DEV_WORK_DIR }}
+            git fetch origin
+            git checkout ${{ github.ref_name }}
+            git pull --rebase
 
-          rm -f config.toml
-          touch config.toml
-          echo '[app]' >> config.toml
-          echo 'title = "TipBot"' >> config.toml
-          echo 'mini_app_url = "${{ secrets.DEV_MINI_APP_URL }}"' >> config.toml
-          echo 'tz_name = "${{ secrets.APP_TZ_NAME }}"' >> config.toml
-          echo '' >> config.toml
-          echo '[bot]' >> config.toml
-          echo 'token = "${{ secrets.DEV_BOT_TOKEN }}"' >> config.toml
-          echo 'drop_pending_updates = true' >> config.toml
-          echo '' >> config.toml
-          echo '[database]' >> config.toml
-          echo 'username = "${{ secrets.DEV_POSTGRES_USERNAME }}"' >> config.toml
-          echo 'password = "${{ secrets.DEV_POSTGRES_PASSWORD }}"' >> config.toml
-          echo 'db = "${{ secrets.DEV_POSTGRES_DB }}"' >> config.toml
-          echo 'host = "${{ secrets.DEV_POSTGRES_HOST }}"' >> config.toml
-          echo 'port = ${{ secrets.DEV_POSTGRES_PORT }}' >> config.toml
-          echo 'echo = false' >> config.toml
-          echo '' >> config.toml
-          echo '[redis]' >> config.toml
-          echo 'host = "${{ secrets.DEV_REDIS_HOST }}"' >> config.toml
-          echo 'port = ${{ secrets.DEV_REDIS_PORT }}' >> config.toml
-          echo 'db = ${{ secrets.DEV_REDIS_DB }}' >> config.toml
-          echo 'password = "${{ secrets.DEV_REDIS_PASSWORD }}"' >> config.toml
-          echo '' >> config.toml
-          echo '[s3]' >> config.toml
-          echo 'aws_host = "${{ secrets.DEV_S3_HOST }}"' >> config.toml
-          echo 'aws_host_internal = "${{ secrets.DEV_S3_HOST_INTERNAL }}"' >> config.toml
-          echo 'aws_host_external = "${{ secrets.DEV_S3_HOST_EXTERNAL }}"' >> config.toml
-          echo 'aws_access_key = "${{ secrets.MINIO_ROOT_USER }}"' >> config.toml
-          echo 'aws_secret_access_key = "${{ secrets.MINIO_ROOT_PASSWORD }}"' >> config.toml
-          echo 'aws_bucket = "${{ secrets.DEV_S3_BUCKET }}"' >> config.toml
-          echo 'presigned_url_ttl = ${{ secrets.DEV_S3_PRESIGNED_TTL }}' >> config.toml
-          echo '' >> config.toml
-          echo '[auth]' >> config.toml
-          echo 'jwt_private_key = """' >> config.toml
-          printf '%s' '${{ secrets.DEV_JWT_PRIVATE_KEY_B64 }}' | base64 -d >> config.toml
-          echo '' >> config.toml
-          echo '"""' >> config.toml
-          echo 'jwt_public_key = """' >> config.toml
-          printf '%s' '${{ secrets.DEV_JWT_PUBLIC_KEY_B64 }}' | base64 -d >> config.toml
-          echo '' >> config.toml
-          echo '"""' >> config.toml
-          echo '' >> config.toml
-          echo '[ml_service]' >> config.toml
-          echo 'host = "${{ secrets.DEV_ML_SERVICE_HOST }}"' >> config.toml
-          echo 'internal_secret = "${{ secrets.DEV_ML_INTERNAL_SECRET }}"' >> config.toml
-          echo '' >> config.toml
-          echo '[logging]' >> config.toml
-          echo 'level = "${{ secrets.DEV_LOGGING_LEVEL }}"' >> config.toml
-          echo '' >> config.toml
-          echo '[dev]' >> config.toml
-          echo 'enabled = ${{ secrets.DEV_MODE_ENABLED }}' >> config.toml
-          echo 'telegram_id = ${{ secrets.DEV_MODE_TELEGRAM_ID }}' >> config.toml
-          echo 'username = "${{ secrets.DEV_MODE_USERNAME }}"' >> config.toml
-          echo 'display_name = "${{ secrets.DEV_MODE_DISPLAY_NAME }}"' >> config.toml
-          echo 'mock_init_data = "${{ secrets.DEV_MODE_MOCK_INIT_DATA }}"' >> config.toml
+            rm -f config.toml
+            touch config.toml
 
-          docker compose -f ${{ secrets.DEV_INFRA_DIR }}/docker-compose.yaml up --build -d backend worker
+            echo '[app]' >> config.toml
+            echo 'title = "TipBot"' >> config.toml
+            echo 'host = "0.0.0.0"' >> config.toml
+            echo 'port = 8000' >> config.toml
+            echo 'workers = 1' >> config.toml
+            echo 'reload = false' >> config.toml
+            echo 'debug = false' >> config.toml
+            echo 'default_offset = 0' >> config.toml
+            echo 'default_limit = 20' >> config.toml
+            echo 'maximum_limit = 100' >> config.toml
+            echo 'tz_name = "${{ secrets.APP_TZ_NAME }}"' >> config.toml
+            echo 'allow_origins = ${{ secrets.DEV_ALLOW_ORIGINS }}' >> config.toml
+            echo 'mini_app_url = "${{ secrets.DEV_MINI_APP_URL }}"' >> config.toml
+            echo 'public_url = "${{ secrets.DEV_PUBLIC_URL }}"' >> config.toml
+            echo '' >> config.toml
+
+            echo '[bot]' >> config.toml
+            echo 'token = "${{ secrets.DEV_BOT_TOKEN }}"' >> config.toml
+            echo 'debug = false' >> config.toml
+            echo 'drop_pending_updates = true' >> config.toml
+            echo '' >> config.toml
+
+            echo '[database]' >> config.toml
+            echo 'username = "${{ secrets.DEV_POSTGRES_USERNAME }}"' >> config.toml
+            echo 'password = "${{ secrets.DEV_POSTGRES_PASSWORD }}"' >> config.toml
+            echo 'db = "${{ secrets.DEV_POSTGRES_DB }}"' >> config.toml
+            echo 'host = "${{ secrets.DEV_POSTGRES_HOST }}"' >> config.toml
+            echo 'port = ${{ secrets.DEV_POSTGRES_PORT }}' >> config.toml
+            echo 'echo = false' >> config.toml
+            echo 'pool_pre_ping = true' >> config.toml
+            echo 'pool_recycle = 1800' >> config.toml
+            echo 'pool_use_lifo = true' >> config.toml
+            echo 'pool_timeout = 30' >> config.toml
+            echo 'pool_size = 5' >> config.toml
+            echo 'max_overflow = 10' >> config.toml
+            echo '' >> config.toml
+
+            echo '[s3]' >> config.toml
+            echo 'aws_host = "${{ secrets.DEV_S3_HOST }}"' >> config.toml
+            echo 'aws_host_internal = "${{ secrets.DEV_S3_HOST_INTERNAL }}"' >> config.toml
+            echo 'aws_host_external = "${{ secrets.DEV_S3_HOST_EXTERNAL }}"' >> config.toml
+            echo 'aws_access_key = "${{ secrets.DEV_S3_ACCESS_KEY }}"' >> config.toml
+            echo 'aws_secret_access_key = "${{ secrets.DEV_S3_SECRET_KEY }}"' >> config.toml
+            echo 'aws_region = "us-east-1"' >> config.toml
+            echo 'aws_bucket = "${{ secrets.DEV_S3_BUCKET }}"' >> config.toml
+            echo 'presigned_url_ttl = ${{ secrets.DEV_S3_PRESIGNED_TTL }}' >> config.toml
+            echo '' >> config.toml
+
+            echo '[redis]' >> config.toml
+            echo 'host = "${{ secrets.DEV_REDIS_HOST }}"' >> config.toml
+            echo 'port = ${{ secrets.DEV_REDIS_PORT }}' >> config.toml
+            echo 'db = ${{ secrets.DEV_REDIS_DB }}' >> config.toml
+            echo 'password = "${{ secrets.DEV_REDIS_PASSWORD }}"' >> config.toml
+            echo 'max_connections = 10' >> config.toml
+            echo 'socket_timeout = 5' >> config.toml
+            echo 'socket_connect_timeout = 5' >> config.toml
+            echo '' >> config.toml
+
+            echo '[auth]' >> config.toml
+            echo 'jwt_algorithm = "RS256"' >> config.toml
+            echo 'jwt_expire_seconds = 2592000' >> config.toml
+            echo 'jwt_private_key = """' >> config.toml
+            printf '%s' '${{ secrets.DEV_JWT_PRIVATE_KEY_B64 }}' | base64 -d >> config.toml
+            echo '' >> config.toml
+            echo '"""' >> config.toml
+            echo 'jwt_public_key = """' >> config.toml
+            printf '%s' '${{ secrets.DEV_JWT_PUBLIC_KEY_B64 }}' | base64 -d >> config.toml
+            echo '' >> config.toml
+            echo '"""' >> config.toml
+            echo '' >> config.toml
+
+            echo '[ml_service]' >> config.toml
+            echo 'host = "${{ secrets.DEV_ML_SERVICE_HOST }}"' >> config.toml
+            echo 'internal_secret = "${{ secrets.DEV_INTERNAL_SECRET }}"' >> config.toml
+            echo 'timeout_seconds = 30' >> config.toml
+            echo '' >> config.toml
+
+            echo '[logging]' >> config.toml
+            echo 'level = "${{ secrets.DEV_LOGGING_LEVEL }}"' >> config.toml
+            echo '' >> config.toml
+
+            echo '[dev]' >> config.toml
+            echo 'enabled = ${{ secrets.DEV_MODE_ENABLED }}' >> config.toml
+            echo 'telegram_id = ${{ secrets.DEV_MODE_TELEGRAM_ID }}' >> config.toml
+            echo 'username = "${{ secrets.DEV_MODE_USERNAME }}"' >> config.toml
+            echo 'display_name = "${{ secrets.DEV_MODE_DISPLAY_NAME }}"' >> config.toml
+            echo 'mock_init_data = "${{ secrets.DEV_MODE_MOCK_INIT_DATA }}"' >> config.toml
+
+            export DOCKER_BUILDKIT=1
+            docker compose -f ${{ secrets.DEV_INFRA_DIR }}/docker-compose.yaml up --build -d backend worker
           EOF
 
       - name: Notify Success
@@ -131,5 +160,7 @@ jobs:
             Репозиторий: `${{ github.repository }}`
             Ветка: `${{ github.ref }}`
             🔗 [Workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
       - name: Cleanup
+        if: always()
         run: rm -rf ~/.ssh

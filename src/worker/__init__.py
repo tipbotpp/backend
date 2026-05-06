@@ -2,17 +2,19 @@
 
 Запуск: arq src.worker.WorkerSettings
 """
+from arq import cron
 from arq.connections import RedisSettings
 
 from src.core.configs import cfg
 from src.worker.context import shutdown, startup
-from src.worker.tasks import process_donation_media
+from src.worker.tasks import passive_income_task, process_donation_media
 
 
 class WorkerSettings:
 	functions = [process_donation_media]
-	# TODO: добавить passive_income_task в functions и cron_jobs когда будет реализована
-	# cron_jobs = [cron(passive_income_task, minute={0, 5, 10, ...})]
+	# Запускается каждую минуту; фактический интервал пейаута контролируется
+	# Redis-cooldown внутри passive_income_task (interval_minutes из PassiveIncomeSettings)
+	cron_jobs = [cron(passive_income_task, minute=set(range(60)))]
 	on_startup = startup
 	on_shutdown = shutdown
 	redis_settings = RedisSettings(

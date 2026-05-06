@@ -21,7 +21,7 @@ from src.utils import local_time
 
 logger = get_logger().bind(layer="service", module="auth")
 
-# ── Pure helpers ──────────────────────────────────────────────────────────────
+# ── Pure helpers ─────────────────────────────────────────────────────────────
 
 def create_token(telegram_id: int) -> tuple[str, str]:
 	"""Создать JWT (RS256). Возвращает (token, jti)."""
@@ -48,6 +48,32 @@ def decode_token(token: str) -> dict[str, object]:
 		cfg.auth.jwt_public_key,
 		algorithms=[cfg.auth.jwt_algorithm],
 	)
+
+
+# ── Shared auth helper ────────────────────────────────────────────────────────
+
+async def get_user_from_cookie(
+    token: str | None,
+    session: AsyncSession,
+    redis: Redis,
+) -> UserDTO | None:
+    """Валидирует JWT из cookie и возвращает UserDTO.
+
+    Используется как в HTTP-провайдере (Request.cookies), так и
+    в WebSocket-хендлере (WebSocket.cookies). Возвращает None если
+    токен отсутствует, невалиден или сессия отозвана.
+    """
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+        jti = cast(str, payload["jti"])
+        telegram_id = await sessions_repo.get_telegram_id(redis, jti)
+        if telegram_id is None:
+            return None
+    except (jwt.PyJWTError, KeyError, ValueError):
+        return None
+    return await sql.users_repo.get_by_telegram_id(session, telegram_id)
 
 
 # ── Service ───────────────────────────────────────────────────────────────────
