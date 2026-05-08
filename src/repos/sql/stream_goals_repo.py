@@ -1,6 +1,6 @@
 import dataclasses
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.stream_goals import StreamGoals
@@ -53,6 +53,14 @@ async def update(
 	await session.flush()
 	await session.refresh(instance)
 	return map_model(instance, StreamGoalDTO)
+
+
+async def increment_current_amount(session: AsyncSession, streamer_id: int, amount: int) -> None:
+	await session.execute(
+		update(StreamGoals)
+		.where(StreamGoals.streamer_id == streamer_id)
+		.values(current_amount=StreamGoals.current_amount + amount),
+	)
 
 
 async def delete(session: AsyncSession, id: int) -> None:
