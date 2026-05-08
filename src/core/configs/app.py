@@ -86,6 +86,14 @@ class App(BaseModel):
 			"Когда менять → укажите ссылку вида https://t.me/<bot>/<app_short_name>."
 		),
 	)
+	public_url: str = Field(
+		default="https://tipbot.example.com",
+		description=(
+			"Публичный базовый URL бэкенда (без слеша на конце).\n"
+			"Используется для формирования widget_url и ws_url.\n"
+			"Когда менять → укажите реальный домен в проде."
+		),
+	)
 
 
 class Auth(BaseModel):

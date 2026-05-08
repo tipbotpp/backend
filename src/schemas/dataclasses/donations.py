@@ -64,6 +64,25 @@ class TimelineItemDTO:
 
 
 @dataclass(slots=True)
+class DonationMediaResultDTO:
+	"""Результат arq-таски process_donation_media.
+
+	Содержит raw S3 ключи — FastAPI WS handler сам генерирует presigned URLs.
+	"""
+	donation_id: int
+	donor_name: str
+	amount: int
+	message: str | None
+	streamer_id: int
+	audio_key: str | None
+	image_key: str | None
+	alert_bg_color: str
+	alert_text_color: str
+	alert_font: str
+	alert_duration_sec: int
+
+
+@dataclass(slots=True)
 class SessionStatsDTO:
 	session_id: int
 	total_collected: int

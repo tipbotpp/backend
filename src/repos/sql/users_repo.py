@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import dataclasses
 
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.models.stream_sessions import StreamSessions
 from src.models.users import Users
 from src.schemas.dataclasses.users import UserCreateDTO, UserDTO
+from src.schemas.enums.users import UserRole
 from src.utils.mappers import map_model
 
 
@@ -129,6 +131,67 @@ async def update_balance(session: AsyncSession, telegram_id: int, new_balance: i
 	await session.flush()
 	await session.refresh(instance)
 	return map_model(instance, UserDTO)
+
+
+async def increment_balance(session: AsyncSession, telegram_id: int, amount: int) -> int | None:
+	"""Атомарно прибавляет amount к балансу. Возвращает новый баланс или None если юзер не найден."""
+	result = await session.execute(
+		update(Users)
+		.where(Users.telegram_id == telegram_id)
+		.values(balance=Users.balance + amount)
+		.returning(Users.balance),
+	)
+	return result.scalar_one_or_none()
+
+
+async def decrement_balance(session: AsyncSession, telegram_id: int, amount: int) -> int | None:
+	"""Атомарно вычитает amount из баланса только если баланс >= amount.
+	Возвращает новый баланс при успехе или None если баланса недостаточно / юзер не найден."""
+	result = await session.execute(
+		update(Users)
+		.where(Users.telegram_id == telegram_id, Users.balance >= amount)
+		.values(balance=Users.balance - amount)
+		.returning(Users.balance),
+	)
+	return result.scalar_one_or_none()
+
+
+async def get_active_streamers(
+    session: AsyncSession,
+    search: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> tuple[list[UserDTO], int]:
+    """Стримеры с активной сессией. Возвращает (items, total)."""
+    base = (
+        select(Users)
+        .join(StreamSessions, StreamSessions.streamer_id == Users.telegram_id)
+        .where(
+            Users.role == UserRole.STREAMER,
+            StreamSessions.is_active.is_(True),
+        )
+        .distinct()
+    )
+    if search:
+        pattern = f"%{search}%"
+        base = base.where(
+            Users.username.ilike(pattern) | Users.display_name.ilike(pattern),
+        )
+
+    total_result = await session.execute(
+        select(func.count()).select_from(base.subquery()),
+    )
+    total = total_result.scalar_one()
+
+    result = await session.execute(base.limit(limit).offset(offset))
+    return [map_model(row, UserDTO) for row in result.scalars().all()], total
+
+
+async def get_all_viewers(session: AsyncSession) -> list[UserDTO]:
+	result = await session.execute(
+		select(Users).where(Users.role == UserRole.VIEWER),
+	)
+	return [map_model(row, UserDTO) for row in result.scalars().all()]
 
 
 async def delete(session: AsyncSession, id: int) -> None:

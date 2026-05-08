@@ -10,6 +10,7 @@ from src.core.exc.exceptions import (
 	ViewerRequiredError,
 )
 from src.repos import sql
+from src.repos.redis import ws_queue_repo
 from src.schemas.dataclasses.balance import BalanceTransactionCreateDTO
 from src.schemas.dataclasses.donations import (
 	DonationCreateDTO,
@@ -70,8 +71,9 @@ class DonationService:
 			log.error("stream not active")
 			raise StreamNotActiveError()
 
+		# Быстрый фейл на стейл-данных — не ходим в БД если баланс заведомо мал
 		if user.balance < amount:
-			log.error("insufficient balance", user_balance=user.balance)
+			log.error("insufficient balance (stale check)", user_balance=user.balance)
 			raise InsufficientBalanceError()
 
 		if message:
@@ -97,7 +99,14 @@ class DonationService:
 		)
 		log.info("donation created", donation_id=donation.id)
 
-		await sql.users_repo.update_balance(self._session, user.telegram_id, user.balance - amount)
+		# Атомарный декремент: списываем только если balance >= amount прямо сейчас
+		new_viewer_balance = await sql.users_repo.decrement_balance(
+			self._session, user.telegram_id, amount,
+		)
+		if new_viewer_balance is None:
+			log.error("insufficient balance (atomic check)", user_balance=user.balance)
+			raise InsufficientBalanceError()
+
 		await sql.balance_transactions_repo.create(
 			self._session,
 			BalanceTransactionCreateDTO(
@@ -108,7 +117,8 @@ class DonationService:
 			),
 		)
 
-		await sql.users_repo.update_balance(self._session, streamer_id, streamer.balance + amount)
+		await sql.users_repo.increment_balance(self._session, streamer_id, amount)
+		await sql.stream_goals_repo.increment_current_amount(self._session, streamer_id, amount)
 		await sql.balance_transactions_repo.create(
 			self._session,
 			BalanceTransactionCreateDTO(
@@ -124,7 +134,7 @@ class DonationService:
 		image_enabled = bool(message) and (alert_settings.image_enabled if alert_settings else True)
 		voice = alert_settings.tts_voice if alert_settings else "silero_v3_ru"
 
-		await self._arq_pool.enqueue_job(
+		job = await self._arq_pool.enqueue_job(
 			"process_donation_media",
 			donation_id=donation.id,
 			text=message,
@@ -134,7 +144,14 @@ class DonationService:
 			tts_enabled=tts_enabled,
 			image_enabled=image_enabled,
 			streamer_id=streamer_id,
+			stream_token=stream_session.stream_token,
+			alert_bg_color=alert_settings.bg_color if alert_settings else "#1a1a2e",
+			alert_text_color=alert_settings.text_color if alert_settings else "#ffffff",
+			alert_font=alert_settings.font if alert_settings else "Roboto",
+			alert_duration_sec=alert_settings.duration_sec if alert_settings else 5,
 		)
+		if job is not None:
+			await ws_queue_repo.push_job_id(self._arq_pool, stream_session.stream_token, job.job_id)
 		log.info("donation.send done — media task enqueued", donation_id=donation.id)
 
 		return donation

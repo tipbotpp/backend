@@ -4,6 +4,7 @@ ctx — словарь, который arq передаёт в каждую task
 Здесь создаём все зависимости вручную (без dishka).
 """
 import httpx
+import redis.asyncio as aioredis
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -33,6 +34,14 @@ async def startup(ctx: dict) -> None:
 		default=DefaultBotProperties(parse_mode=ParseMode.HTML),
 	)
 
+	ctx["redis"] = aioredis.Redis(
+		host=cfg.redis.host,
+		port=cfg.redis.port,
+		db=cfg.redis.db,
+		password=cfg.redis.password,
+		decode_responses=True,
+	)
+
 	logger.info("worker.startup done")
 
 
@@ -42,5 +51,6 @@ async def shutdown(ctx: dict) -> None:
 	await ctx["engine"].dispose()
 	await ctx["ml_client"].aclose()
 	await ctx["bot"].session.close()
+	await ctx["redis"].aclose()
 
 	logger.info("worker.shutdown done")
