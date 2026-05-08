@@ -118,6 +118,7 @@ class DonationService:
 		)
 
 		await sql.users_repo.increment_balance(self._session, streamer_id, amount)
+		await sql.stream_goals_repo.increment_current_amount(self._session, streamer_id, amount)
 		await sql.balance_transactions_repo.create(
 			self._session,
 			BalanceTransactionCreateDTO(
