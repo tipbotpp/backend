@@ -99,13 +99,13 @@ async def process_donation_media(
 
 	if isinstance(tts_result, BaseException):
 		log.error("tts failed", error=str(tts_result))
-	else:
+	elif tts_result is not None:
 		audio_key = tts_result.audio_key
 		log.info("tts done", audio_key=audio_key)
 
 	if isinstance(image_result, BaseException):
-		log.debug("image skipped or failed", error=str(image_result))
-	else:
+		log.error("image failed", error=str(image_result))
+	elif image_result is not None:
 		image_key = image_result.image_key
 		log.info("image done", image_key=image_key)
 
