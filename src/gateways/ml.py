@@ -70,14 +70,30 @@ async def synthesize_tts(client: httpx.AsyncClient, dto: TTSRequestDTO) -> TTSRe
 	return result
 
 
-# TODO: реализовать когда ml-сервис поддержит POST /image/generate
 async def generate_image(client: httpx.AsyncClient, dto: ImageRequestDTO) -> ImageResultDTO:
-	"""Заглушка — ML-сервис пока не реализует /image/generate."""
 	log = logger.bind(
 		request_donation_id=dto.donation_id,
 		request_donor_name=dto.donor_name,
 		request_amount=dto.amount,
 		request_text_length=len(dto.text),
 	)
-	log.debug("gateway.generate_image stub — skipped")
-	raise NotImplementedError("image generation not yet implemented in ml-service")
+	log.debug("gateway.generate_image request")
+
+	response = await client.post(
+		"/image/generate",
+		json={
+			"text": dto.text,
+			"donor_name": dto.donor_name,
+			"amount": dto.amount,
+			"donation_id": dto.donation_id,
+		},
+	)
+	response.raise_for_status()
+	data = response.json()
+
+	result = ImageResultDTO(
+		image_key=data["image_key"],
+		donation_id=data["donation_id"],
+	)
+	log.debug("gateway.generate_image response", image_key=result.image_key, status_code=response.status_code)
+	return result
