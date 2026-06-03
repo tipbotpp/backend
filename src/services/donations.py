@@ -1,6 +1,7 @@
 from arq.connections import ArqRedis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.schemas.enums import TTSVoice
 from src.core.exc.exceptions import (
 	ForbiddenError,
 	InsufficientBalanceError,
@@ -132,7 +133,7 @@ class DonationService:
 		alert_settings = await sql.alert_settings_repo.get_by_streamer_id(self._session, streamer_id)
 		tts_enabled = bool(message) and (alert_settings.tts_enabled if alert_settings else True)
 		image_enabled = bool(message) and (alert_settings.image_enabled if alert_settings else True)
-		voice = alert_settings.tts_voice if alert_settings else "silero_v3_ru"
+		voice = alert_settings.tts_voice if alert_settings else TTSVoice.AIDAR
 
 		job = await self._arq_pool.enqueue_job(
 			"process_donation_media",
