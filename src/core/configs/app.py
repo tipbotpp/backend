@@ -90,8 +90,16 @@ class App(BaseModel):
 		default="https://tipbot.example.com",
 		description=(
 			"Публичный базовый URL бэкенда (без слеша на конце).\n"
-			"Используется для формирования widget_url и ws_url.\n"
+			"Используется для формирования ws_url.\n"
 			"Когда менять → укажите реальный домен в проде."
+		),
+	)
+	widget_base_url: str = Field(
+		default="https://tipbot.example.com",
+		description=(
+			"Публичный базовый URL фронтенда (без слеша на конце).\n"
+			"Используется для формирования widget_url — ссылки на OBS Browser Source.\n"
+			"Когда менять → укажите домен фронтенда в проде."
 		),
 	)
 
