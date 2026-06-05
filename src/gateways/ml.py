@@ -86,6 +86,8 @@ async def generate_image(client: httpx.AsyncClient, dto: ImageRequestDTO) -> Ima
 			"donor_name": dto.donor_name,
 			"amount": dto.amount,
 			"donation_id": dto.donation_id,
+			"width": dto.width,
+			"height": dto.height,
 		},
 	)
 	response.raise_for_status()
