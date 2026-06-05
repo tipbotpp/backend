@@ -1,4 +1,4 @@
-from src.core.config import cfg
+from src.core.configs import cfg
 from src.core.storages import S3Manager
 
 
