@@ -41,6 +41,8 @@ class ImageRequestDTO:
 	amount: int
 	donation_id: int
 	style_hint: str = "bright, celebration, coins"
+	width: int = 512
+	height: int = 512
 
 
 @dataclass(slots=True)
