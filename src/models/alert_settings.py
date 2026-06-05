@@ -65,7 +65,7 @@ class AlertSettings(Base):
 	tts_voice: Mapped[str] = mapped_column(
 		String(64),
 		nullable=False,
-		default="silero_v3_ru",
-		server_default="silero_v3_ru",
+		default="aidar",
+		server_default="aidar",
 		comment="Голос озвучки доната",
 	)
